@@ -1,9 +1,11 @@
 import type { Config } from "tailwindcss";
 import colors from "./src/styles/colors";
 import fontSize from "./src/styles/font-size";
+import defaultTheme from "tailwindcss/defaultTheme";
+
 
 const config: Config = {
-  content: ["./src/**/*.{ts,tsx}"],
+content: ["./app/**/*.{js,ts,jsx,tsx}", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -38,6 +40,10 @@ const config: Config = {
       },
       fontSize,
     },
+     fontFamily: {
+        sans: ["Poppins", ...defaultTheme.fontFamily.sans],
+      },
+
   },
   plugins: [],
 };
