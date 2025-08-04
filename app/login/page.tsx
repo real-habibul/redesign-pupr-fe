@@ -59,6 +59,16 @@ const LoginPage = () => {
             <p className="font-poppins text-H1 text-[40px]">
               Tes font-size manual
             </p>
+            <p className="text-red-500 text-4xl font-bold">
+              TES INI HARUS MERAH BESAR
+            </p>
+            <div className="bg-customtest text-white p-4">
+              Kalau ini ungu berarti tailwind.config.js aktif.
+            </div>
+            <div className="bg-red-500 text-white text-4xl p-4">
+              Test Tailwind
+            </div>
+            <p className="text-test text-testcolor">Hello Custom</p>
           </div>
           {/* <LoginForm
             onAlert={handleAlert}

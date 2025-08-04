@@ -1,14 +1,18 @@
-import type { Config } from "tailwindcss";
 import colors from "./src/styles/colors";
-import fontSize from "./src/styles/font-size";
+const fontSize = require("./src/styles/font-size");
 import defaultTheme from "tailwindcss/defaultTheme";
 
-
-const config: Config = {
-content: ["./app/**/*.{js,ts,jsx,tsx}", "./src/**/*.{js,ts,jsx,tsx}"],
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
+        customtest: "#ff00ff",
+        testcolor: "#ff00ff",
+      },
+      fontSize: {
+        test: "69px",
         surface: {
           light: {
             background: colors.Surface.Light.Background,
@@ -40,12 +44,9 @@ content: ["./app/**/*.{js,ts,jsx,tsx}", "./src/**/*.{js,ts,jsx,tsx}"],
       },
       fontSize,
     },
-     fontFamily: {
-        sans: ["Poppins", ...defaultTheme.fontFamily.sans],
-      },
-
+    fontFamily: {
+      sans: ["Poppins", ...defaultTheme.fontFamily.sans],
+    },
   },
   plugins: [],
 };
-
-export default config;
