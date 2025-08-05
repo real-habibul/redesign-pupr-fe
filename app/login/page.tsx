@@ -3,6 +3,8 @@
 import Image from "next/image";
 
 import { useState } from "react";
+import Button from "@components/button";
+// import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 // import useAuth from "@hooks/use-auth";
 // import LoginForm from "@components/login-form";
 // import Modal from "@components/modal";
@@ -44,32 +46,23 @@ const LoginPage = () => {
           />
         </div>
 
-        <div className="flex flex-col items-center justify-center flex-grow mt-[56px]">
-          <div className="self-center text-center">
-            <h5 className="text-H5 text-emphasis-on_surface-high">
+        <div className="flex flex-col items-center justify-center h-screen">
+          <div className="text-center px-4">
+            <h5 className="text-H5 text-emphasis-on-surface-high">
               Selamat Datang di Katalog HSPW!
             </h5>
-            <p className="text-B1 text-emphasis-on_surface-medium w-full max-w-[384px]">
+            <p className="text-B1 text-emphasis-on-surface-medium max-w-[384px] mx-auto">
               Katalog Informasi Harga Satuan Pokok Material Peralatan Tenaga
               Kerja Konstruksi per Wilayah
             </p>
-            <p className="font-poppins text-H1">
-              Ini seharusnya pakai Poppins dan font-size custom
-            </p>
-            <p className="font-poppins text-H1 text-[40px]">
-              Tes font-size manual
-            </p>
-            <p className="text-red-500 text-4xl font-bold">
-              TES INI HARUS MERAH BESAR
-            </p>
-            <div className="bg-customtest text-white p-4">
-              Kalau ini ungu berarti tailwind.config.js aktif.
-            </div>
-            <div className="bg-red-500 text-white text-4xl p-4">
-              Test Tailwind
-            </div>
-            <p className="text-test text-testcolor">Hello Custom</p>
           </div>
+          <Button variant="solid_blue" className="w-full">
+            Masuk
+          </Button>
+          <Button variant="outlined_yellow" className="w-full">
+            Masuk dengan SSO
+          </Button>
+
           {/* <LoginForm
             onAlert={handleAlert}
             onOpenRegister={() => setIsRegisterModalOpen(true)}
@@ -106,12 +99,12 @@ const LoginPage = () => {
         </div> */}
       </div>
 
-      <div className="hidden md:block max-h-[960px] max-w-[688px]">
+      <div className="hidden md:block w-1/2 h-screen relative">
         <Image
-          src="/images/login/login-asset.png"
+          src="/images/login/login-asset.svg"
           alt="Login Image"
-          width={400}
-          height={400}
+          fill
+          className="object-cover"
         />
       </div>
 

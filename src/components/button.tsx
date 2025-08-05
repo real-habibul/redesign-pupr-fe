@@ -52,20 +52,27 @@ const Button: React.FC<ButtonProps> = ({
 
   const variants: Record<Variant, string> = {
     solid_blue:
-      "bg-custom-blue-500 text-emphasis-on_color-high hover:bg-custom-blue-600 active:bg-custom-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700",
+      "bg-solid_basic_blue_500 text-emphasis_light_on_high hover:bg-solid_basic_blue_600 active:bg-solid_basic_blue_700 focus:outline-none focus:ring-2 focus:ring-solid_basic_blue_300",
     solid_yellow:
-      "bg-custom-yellow-500 text-emphasis-on_color-high hover:bg-custom-yellow-600 active:bg-custom-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-700",
+      "bg-solid_basic_yellow_500 text-emphasis_light_on_surface_high hover:bg-solid_basic_yellow_600 active:bg-solid_basic_yellow_700 focus:outline-none focus:ring-2 focus:ring-solid_basic_yellow_300",
+
     outlined_blue:
-      "ring-2 ring-custom-blue-500 text-custom-blue-500 hover:bg-custom-blue-600/10 active:bg-custom-blue-700/1 focus:outline-none focus:ring-2 focus:ring-blue-700",
+      "ring-2 ring-solid_basic_blue_500 text-solid_basic_blue_500 hover:bg-solid_basic_blue_500/10 active:bg-solid_basic_blue_500/20 focus:outline-none focus:ring-2 focus:ring-solid_basic_blue_300",
+
     outlined_yellow:
-      "ring-2 ring-custom-yellow-500 text-custom-yellow-500 hover:bg-custom-yellow-600/10 active:bg-custom-yellow-700/1 focus:outline-none focus:ring-2 focus:ring-yellow-700",
+      "ring-2 ring-solid_basic_yellow_500 text-solid_basic_yellow_500 hover:bg-solid_basic_yellow_500/10 active:bg-solid_basic_yellow_500/20 focus:outline-none focus:ring-2 focus:ring-solid_basic_yellow_300",
+
     blue_text:
-      "text-custom-blue-500 hover:text-custom-blue-600 active:text-custom-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700",
+      "text-solid_basic_blue_500 hover:text-solid_basic_blue_600 active:text-solid_basic_blue_700 focus:outline-none focus:ring-2 focus:ring-solid_basic_blue_300",
+
     red_text:
-      "text-custom-red-500 hover:text-custom-red-600 active:text-custom-red-700 focus:outline-none focus:ring-2 focus:ring-red-700",
+      "text-solid_basic_red_500 hover:text-solid_basic_red_600 active:text-solid_basic_red_700 focus:outline-none focus:ring-2 focus:ring-solid_basic_red_300",
+
     outlined_icon:
-      "ring-2 ring-custom-blue-500 text-custom-blue-500 hover:bg-custom-blue-500/10 active:bg-custom-blue-700/20 focus:outline-none focus:ring-2 focus:ring-blue-700 flex justify-center items-center rounded-full h-10 w-10",
-    disabled: "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50",
+      "ring-2 ring-solid_basic_blue_500 text-solid_basic_blue_500 hover:bg-solid_basic_blue_500/10 active:bg-solid_basic_blue_500/20 focus:outline-none focus:ring-2 focus:ring-solid_basic_blue_300 flex justify-center items-center rounded-full h-10 w-10",
+
+    disabled:
+      "bg-solid_basic_neutral_100 text-emphasis_light_on_surface_small cursor-not-allowed opacity-50",
   };
 
   return (
