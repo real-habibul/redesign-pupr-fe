@@ -3,10 +3,10 @@
 import Image from "next/image";
 
 import { useState } from "react";
-import Button from "@components/button";
+// import Button from "@components/button";
 // import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 // import useAuth from "@hooks/use-auth";
-// import LoginForm from "@components/login-form";
+import LoginForm from "@components/login-form";
 // import Modal from "@components/modal";
 // import CustomAlert from "@components/alert";
 
@@ -48,26 +48,20 @@ const LoginPage = () => {
 
         <div className="flex flex-col items-center justify-center h-screen">
           <div className="text-center px-4">
-            <h5 className="text-H5 text-emphasis-on-surface-high">
+            <h5 className="text-H5 text-emphasis_light_on_surface_high ">
               Selamat Datang di Katalog HSPW!
             </h5>
-            <p className="text-B1 text-emphasis-on-surface-medium max-w-[384px] mx-auto">
+            <p className="text-B1 text-emphasis_light_on_surface_medium max-w-[384px] mx-auto">
               Katalog Informasi Harga Satuan Pokok Material Peralatan Tenaga
               Kerja Konstruksi per Wilayah
             </p>
           </div>
-          <Button variant="solid_blue" className="w-full">
-            Masuk
-          </Button>
-          <Button variant="outlined_yellow" className="w-full">
-            Masuk dengan SSO
-          </Button>
 
-          {/* <LoginForm
+          <LoginForm
             onAlert={handleAlert}
             onOpenRegister={() => setIsRegisterModalOpen(true)}
             onOpenForgotPassword={() => setIsForgotPasswordModalOpen(true)}
-          /> */}
+          />
         </div>
 
         {/* <div className="flex flex-row justify-between items-center">
