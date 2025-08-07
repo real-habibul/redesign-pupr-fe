@@ -53,9 +53,9 @@ const TextInput: React.FC<TextInputProps> = ({
 
   const variants: Record<string, string> = {
     border:
-      "border border-surface-light-outline focus:outline-none focus:border-2 focus:border-custom-blue-500",
+      "border border-surface_light_outline focus:outline-none focus:border-2 focus:border-solid_basic_blue_500",
     disabledActive:
-      "bg-white border border-surface-light-outline cursor-not-allowed text-emphasis-on_surface-high",
+      "bg-white border border-surface_light_outline cursor-not-allowed text-emphasis_light_on_surface_high",
   };
 
   const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
@@ -79,11 +79,11 @@ const TextInput: React.FC<TextInputProps> = ({
         <>
           {label && (
             <label
-              className={`text-B2 text-emphasis-on_surface-high h-8 min-w-[180px] mr-2 flex items-center ${labelMargin}`}
+              className={`text-B2 text-emphasis_light_on_surface_high h-8 min-w-[180px] mr-2 flex items-center ${labelMargin}`}
               style={{ whiteSpace: "nowrap" }}>
               {label}
               {isRequired && (
-                <span className="text-custom-red-500 ml-1">*</span>
+                <span className="text-solid_basic_red_500 ml-1">*</span>
               )}
             </label>
           )}
@@ -99,7 +99,7 @@ const TextInput: React.FC<TextInputProps> = ({
                 disabledActive
                   ? variants.disabledActive
                   : error
-                  ? `border-custom-red-500 focus:border-custom-blue-500 border-2`
+                  ? `border-solid_basic_red_500 focus:border-solid_basic_blue_500 border-2`
                   : variants[variant]
               } rounded-[16px] transition-all duration-200 ease-in-out h-12`}
             />
@@ -132,7 +132,7 @@ const TextInput: React.FC<TextInputProps> = ({
                 size={16}
                 className="mr-1"
               />
-              <span className="text-custom-red-500 text-ExtraSmall">
+              <span className="text-solid_basic_red_500 text-ExtraSmall">
                 {error}
               </span>
             </div>
@@ -143,14 +143,14 @@ const TextInput: React.FC<TextInputProps> = ({
           <div className={`flex items-center ${spaceClass}`}>
             {label && (
               <label
-                className="text-B2 text-emphasis-on_surface-high h-8 min-w-[180px] mr-2 flex items-center"
+                className="text-B2 text-emphasis_light_on_surface_high h-8 min-w-[180px] mr-2 flex items-center"
                 style={{
                   whiteSpace: "nowrap",
                   marginRight: labelMargin,
                 }}>
                 {label}
                 {isRequired && (
-                  <span className="text-custom-red-500 ml-1">*</span>
+                  <span className="text-solid_basic_red_500 ml-1">*</span>
                 )}
               </label>
             )}
@@ -166,7 +166,7 @@ const TextInput: React.FC<TextInputProps> = ({
                   disabledActive
                     ? variants.disabledActive
                     : error
-                    ? `border-custom-red-500 focus:border-custom-blue-500 border-2`
+                    ? `border-solid_basic_red_500 focus:border-solid_basic_blue_500 border-2`
                     : variants[variant]
                 } rounded-[16px] transition-all duration-200 ease-in-out h-12`}
               />
@@ -200,7 +200,7 @@ const TextInput: React.FC<TextInputProps> = ({
                 size={16}
                 className="mr-1"
               />
-              <span className="text-custom-red-500 text-ExtraSmall">
+              <span className="text-solid_basic_red_500 text-ExtraSmall">
                 {error}
               </span>
             </div>

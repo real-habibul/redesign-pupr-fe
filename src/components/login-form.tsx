@@ -67,27 +67,21 @@ const LoginForm = ({
           type="email"
           isRequired
         />
-
-        <TextInput
-          label="Kata Sandi"
-          placeholder="Masukkan password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          type="password"
-          isRequired
-        />
+        <div className="space-y-1">
+          <TextInput
+            label="Kata Sandi"
+            placeholder="Masukkan password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            isRequired
+          />
+          <button className="text-B2 text-solid_basic_red_500 font-medium hover:underline">
+            Lupa Kata Sandi
+          </button>
+        </div>
       </div>
 
-      <button className="text-B2 text-solid_basic_red_500 font-medium hover:underline">
-        Lupa Kata Sandi
-      </button>
-      {/* 
-      <div className="flex justify-center gap-1">
-        <p className="text-Small text-neutral-500">Belum punya akun?</p>
-        <Button onClick={onOpenRegister} variant="blue_text" size="Extra_Small">
-          Daftar
-        </Button>
-      </div> */}
       <div className="w-full max-w-[336px] space-y-2">
         <Button variant="solid_blue" className="w-full">
           Masuk
@@ -104,11 +98,11 @@ const LoginForm = ({
           Masuk dengan SSO
         </Button>
 
-        <div className="flex justify-center items-center gap-1 mt-4">
-          <p className="text-B2 text-emphasis-on_surface-medium">
+        <div className="flex justify-center items-center gap-1">
+          <p className="text-ExtraSmall text-solid_basic_neutral_500 text-emphasis-on_surface-medium">
             Belum punya akun?
           </p>
-          <button className="text-B2 text-solid_primary font-medium hover:underline">
+          <button className="text-ExtraSmall text-solid_basic_blue_500 font-medium hover:underline">
             Daftar
           </button>
         </div>

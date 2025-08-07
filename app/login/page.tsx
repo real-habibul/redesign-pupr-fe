@@ -3,7 +3,7 @@
 import Image from "next/image";
 
 import { useState } from "react";
-// import Button from "@components/button";
+import Button from "@components/button";
 // import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 // import useAuth from "@hooks/use-auth";
 import LoginForm from "@components/login-form";
@@ -30,7 +30,7 @@ const LoginPage = () => {
 
   return (
     <div className="relative flex justify-center items-center h-screen gap-8 mx-4 md:gap-12 lg:gap-16">
-      <div className="flex flex-col justify-between w-full max-w-[900px] h-full p-8 mx-auto">
+      <div className="flex flex-col justify-between w-full h-full p-8 mx-auto">
         <div className="flex justify-between">
           <Image
             src="/images/login/pupr-logo.png"
@@ -46,7 +46,7 @@ const LoginPage = () => {
           />
         </div>
 
-        <div className="flex flex-col items-center justify-center h-screen">
+        <div className="flex flex-col items-center justify-center h-screen space-y-14">
           <div className="text-center px-4">
             <h5 className="text-H5 text-emphasis_light_on_surface_high ">
               Selamat Datang di Katalog HSPW!
@@ -64,14 +64,14 @@ const LoginPage = () => {
           />
         </div>
 
-        {/* <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-row justify-between items-center">
           <p className="text-B2 text-neutral-500">
-            2024© SIPASTI V.3.0 All Reserved by PUPR
+            2025© SIPASTI V.3.0 All Reserved by PUPR
           </p>
           <div className="gap-x-2 flex items-center">
-            <Button onClick={() => {}} variant="blue_text" size="B2">
+            <button className="text-B2 text-solid_basic_blue_500 font-medium hover:underline">
               Kebijakan Privasi
-            </Button>
+            </button>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="4"
@@ -80,25 +80,26 @@ const LoginPage = () => {
               fill="none">
               <circle cx="2" cy="2" r="2" fill="#B3B3B3" />
             </svg>
-            <Button onClick={() => {}} variant="blue_text" size="B2">
+
+            <button className="text-B2 text-solid_basic_blue_500 font-medium hover:underline">
               Syarat dan Ketentuan
-            </Button>
+            </button>
           </div>
-          <CustomAlert
+          {/* <CustomAlert
             message={alertMessage}
             severity={alertSeverity}
             openInitially={alertOpen}
             onClose={() => setAlertOpen(false)}
-          />
-        </div> */}
+          /> */}
+        </div>
       </div>
 
-      <div className="hidden md:block w-1/2 h-screen relative">
+      <div className="hidden md:block w-full h-screen relative">
         <Image
           src="/images/login/login-asset.svg"
           alt="Login Image"
           fill
-          className="object-cover"
+          className="object-contain"
         />
       </div>
 

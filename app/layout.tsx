@@ -8,8 +8,11 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: "Your App Title",
+  title: "E-Katalog SIPASTI (local)",
   description: "Your description",
+  icons: {
+    icon: "/images/login/favicon.svg",
+  },
 };
 
 export default function RootLayout({
