@@ -2,7 +2,7 @@
   /* Surface - Light */
   --color-surface-light-background: #ffffff;
   --color-surface-light-background-overlay: rgba(0, 0, 0, 0.08);
-  --color-surface-light-outline: rgba(0, 0, 0, 0.12);
+  --color-surface-light-outline: #E0E0E0;
 
   /* Emphasis - Light - On Surface */
   --color-emphasis-light-on-surface-high: rgba(0, 0, 0, 0.88);
