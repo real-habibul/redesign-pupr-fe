@@ -1,32 +1,14 @@
 "use client";
 
 import Image from "next/image";
-
 import { useState } from "react";
-import Button from "@components/button";
-// import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
-// import useAuth from "@hooks/use-auth";
-import LoginForm from "@components/login-form";
-// import Modal from "@components/modal";
-// import CustomAlert from "@components/alert";
-
-// import Register from "./register";
-// import ForgotPassword from "./forgotpassword";
+import LoginForm from "@components/common/auth/login-form/login-form";
+// NOTE: pastikan <AlertProvider> sudah membungkus tree ini (di layout.tsx atau root)
 
 const LoginPage = () => {
-  //   useAuth();
-  const [alertMessage, setAlertMessage] = useState("");
-  const [alertSeverity, setAlertSeverity] = useState("error");
-  const [alertOpen, setAlertOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] =
     useState(false);
-
-  const handleAlert = (msg: string, severity: string) => {
-    setAlertMessage(msg);
-    setAlertSeverity(severity);
-    setAlertOpen(true);
-  };
 
   return (
     <div className="relative flex justify-center items-center h-screen gap-8 mx-4 md:gap-12 lg:gap-16">
@@ -48,7 +30,7 @@ const LoginPage = () => {
 
         <div className="flex flex-col items-center justify-center h-screen space-y-14">
           <div className="text-center px-4">
-            <h5 className="text-H5 text-emphasis_light_on_surface_high ">
+            <h5 className="text-H5 text-emphasis_light_on_surface_high">
               Selamat Datang di Katalog HSPW!
             </h5>
             <p className="text-B1 text-emphasis_light_on_surface_medium max-w-[384px] mx-auto">
@@ -58,7 +40,6 @@ const LoginPage = () => {
           </div>
 
           <LoginForm
-            onAlert={handleAlert}
             onOpenRegister={() => setIsRegisterModalOpen(true)}
             onOpenForgotPassword={() => setIsForgotPasswordModalOpen(true)}
           />
@@ -80,17 +61,10 @@ const LoginPage = () => {
               fill="none">
               <circle cx="2" cy="2" r="2" fill="#B3B3B3" />
             </svg>
-
             <button className="text-B2 text-solid_basic_blue_500 font-medium hover:underline">
               Syarat dan Ketentuan
             </button>
           </div>
-          {/* <CustomAlert
-            message={alertMessage}
-            severity={alertSeverity}
-            openInitially={alertOpen}
-            onClose={() => setAlertOpen(false)}
-          /> */}
         </div>
       </div>
 
@@ -103,17 +77,15 @@ const LoginPage = () => {
         />
       </div>
 
-      {/* <Modal
-        isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}>
+      {/* 
+      <Modal isOpen={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)}>
         <Register onClose={() => setIsRegisterModalOpen(false)} />
       </Modal>
 
-      <Modal
-        isOpen={isForgotPasswordModalOpen}
-        onClose={() => setIsForgotPasswordModalOpen(false)}>
+      <Modal isOpen={isForgotPasswordModalOpen} onClose={() => setIsForgotPasswordModalOpen(false)}>
         <ForgotPassword onClose={() => setIsForgotPasswordModalOpen(false)} />
-      </Modal> */}
+      </Modal> 
+      */}
     </div>
   );
 };

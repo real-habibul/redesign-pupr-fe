@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Poppins } from "next/font/google";
+import { AlertProvider } from "@components/ui/alert";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -23,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} font-sans antialiased`}>
-        {children}
+        <AlertProvider>{children}</AlertProvider>
       </body>
     </html>
   );

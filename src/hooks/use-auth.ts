@@ -1,14 +1,24 @@
-// import { useEffect } from "react";
-// import { useRouter } from "next/router";
+"use client";
+import { useCallback } from "react";
+import { login, ssoLogin } from "@lib/api/auth";
 
-// const useAuth = () => {
-//   const router = useRouter();
-//   useEffect(() => {
-//     const token = localStorage.getItem("token");
-//     if (token && router.pathname === "/login") {
-//       router.replace("/dashboard");
-//     }
-//   }, [router]);
-// };
+export function useAuthActions() {
+  const doLogin = useCallback(async (email: string, password: string) => {
+    if (!email.trim() || !password.trim()) {
+      throw new Error("Email dan kata sandi wajib diisi.");
+    }
+    const res = await login({ email, password });
+    if (!res.success) throw new Error(res.message || "Login gagal.");
+    // simpan token kalau ada
+    if (res.data?.accessToken) localStorage.setItem("accessToken", res.data.accessToken);
+    return res;
+  }, []);
 
-// export default useAuth;
+  const doSsoLogin = useCallback(async (token: string) => {
+    const res = await ssoLogin({ token });
+    if (!res.success) throw new Error(res.message || "Login SSO gagal.");
+    return res;
+  }, []);
+
+  return { doLogin, doSsoLogin };
+}
