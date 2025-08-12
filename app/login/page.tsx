@@ -1,14 +1,23 @@
 "use client";
-
+import * as React from "react";
 import Image from "next/image";
-import { useState } from "react";
 import LoginForm from "@components/common/auth/login-form/login-form";
-// NOTE: pastikan <AlertProvider> sudah membungkus tree ini (di layout.tsx atau root)
+import { useLogin } from "@hooks/auth/use-login";
 
-const LoginPage = () => {
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+const LoginPage: React.FC = () => {
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = React.useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] =
-    useState(false);
+    React.useState(false);
+
+  const {
+    email,
+    password,
+    loading,
+    onEmailChange,
+    onPasswordChange,
+    onLogin,
+    onSsoLogin,
+  } = useLogin();
 
   return (
     <div className="relative flex justify-center items-center h-screen gap-8 mx-4 md:gap-12 lg:gap-16">
@@ -40,6 +49,13 @@ const LoginPage = () => {
           </div>
 
           <LoginForm
+            email={email}
+            password={password}
+            loading={loading}
+            onEmailChange={onEmailChange}
+            onPasswordChange={onPasswordChange}
+            onLogin={onLogin}
+            onSsoLogin={onSsoLogin}
             onOpenRegister={() => setIsRegisterModalOpen(true)}
             onOpenForgotPassword={() => setIsForgotPasswordModalOpen(true)}
           />
@@ -76,16 +92,6 @@ const LoginPage = () => {
           className="object-contain"
         />
       </div>
-
-      {/* 
-      <Modal isOpen={isRegisterModalOpen} onClose={() => setIsRegisterModalOpen(false)}>
-        <Register onClose={() => setIsRegisterModalOpen(false)} />
-      </Modal>
-
-      <Modal isOpen={isForgotPasswordModalOpen} onClose={() => setIsForgotPasswordModalOpen(false)}>
-        <ForgotPassword onClose={() => setIsForgotPasswordModalOpen(false)} />
-      </Modal> 
-      */}
     </div>
   );
 };

@@ -1,59 +1,31 @@
 "use client";
-
-import axios from "axios";
-import { useState } from "react";
+import * as React from "react";
 import TextInput from "@components/ui/text-input";
 import Button from "@components/ui/button";
-import { useAuthActions } from "@hooks/use-auth";
-import { useAlert } from "@components/ui/alert";
 
-interface Props {
+interface LoginFormProps {
+  email: string;
+  password: string;
+  loading: boolean;
+  onEmailChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPasswordChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onLogin: () => void;
+  onSsoLogin: () => void;
   onOpenRegister: () => void;
   onOpenForgotPassword: () => void;
 }
 
-const LoginForm = ({ onOpenRegister, onOpenForgotPassword }: Props) => {
-  const { show } = useAlert();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { doLogin, doSsoLogin } = useAuthActions();
-
-  const handleLogin = async () => {
-    show("Sedang memproses login...", "info");
-    setLoading(true);
-    try {
-      await doLogin(email, password);
-      show("Login berhasil!", "success");
-    } catch (err: any) {
-      let msg = "Login gagal.";
-      if (axios.isAxiosError(err)) {
-        msg =
-          (err as any).friendlyMessage ??
-          err.response?.data?.message ??
-          err.message ??
-          msg;
-      } else if (err?.message) {
-        msg = err.message;
-      }
-      show(msg, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSSOLogin = async () => {
-    setLoading(true);
-    try {
-      await doSsoLogin("YOUR_SSO_TOKEN");
-      show("Login SSO berhasil!", "success");
-    } catch (err: any) {
-      show(err?.message ?? "Login SSO gagal.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+const LoginForm: React.FC<LoginFormProps> = ({
+  email,
+  password,
+  loading,
+  onEmailChange,
+  onPasswordChange,
+  onLogin,
+  onSsoLogin,
+  onOpenRegister,
+  onOpenForgotPassword,
+}) => {
   return (
     <div className="space-y-4 max-w-[336px] w-full">
       <div className="space-y-4">
@@ -62,7 +34,7 @@ const LoginForm = ({ onOpenRegister, onOpenForgotPassword }: Props) => {
             label="Email"
             placeholder="Masukkan Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={onEmailChange}
             type="email"
             isRequired
           />
@@ -73,7 +45,7 @@ const LoginForm = ({ onOpenRegister, onOpenForgotPassword }: Props) => {
             label="Kata Sandi"
             placeholder="Masukkan Kata Sandi"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={onPasswordChange}
             type="password"
             isRequired
           />
@@ -90,7 +62,7 @@ const LoginForm = ({ onOpenRegister, onOpenForgotPassword }: Props) => {
       <div className="w-full max-w-[336px] space-y-2">
         <Button
           variant="solid_blue"
-          onClick={handleLogin}
+          onClick={onLogin}
           disabled={loading || !email.trim() || !password.trim()}>
           {loading ? "Memproses..." : "Masuk"}
         </Button>
@@ -105,7 +77,7 @@ const LoginForm = ({ onOpenRegister, onOpenForgotPassword }: Props) => {
 
         <Button
           variant="outlined_yellow"
-          onClick={handleSSOLogin}
+          onClick={onSsoLogin}
           disabled={loading}>
           Masuk dengan SSO
         </Button>
