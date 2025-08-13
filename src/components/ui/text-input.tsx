@@ -69,7 +69,6 @@ export default function TextInput({
       sx={{
         "&, & *": { fontFamily: "Poppins, sans-serif !important" },
 
-        /* label */
         "& .MuiInputLabel-root": {
           color: "var(--color-emphasis-light-on-surface-small)",
         },
@@ -80,10 +79,9 @@ export default function TextInput({
           color: "var(--color-solid-basic-red-500, #EF4444)",
         },
 
-        /* outline */
         "& .MuiOutlinedInput-root": {
           borderRadius: "16px",
-
+          height: "48px",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "var(--color-surface-light-outline)",
           },

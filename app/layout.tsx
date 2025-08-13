@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Poppins } from "next/font/google";
 import { AlertProvider } from "@components/ui/alert";
+import LayoutShell from "@components/ui/navigation-bar/layout-shell";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -11,9 +12,7 @@ const poppins = Poppins({
 export const metadata = {
   title: "E-Katalog SIPASTI (local)",
   description: "Your description",
-  icons: {
-    icon: "/images/login/favicon.svg",
-  },
+  icons: { icon: "/images/login/favicon.svg" },
 };
 
 export default function RootLayout({
@@ -24,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} font-sans antialiased`}>
-        <AlertProvider>{children}</AlertProvider>
+        <AlertProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </AlertProvider>
       </body>
     </html>
   );
