@@ -21,7 +21,7 @@ interface LoginFormProps {
   onPasswordChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onLogin: () => void;
   onSsoLogin: () => void;
-  onOpenRegister: () => void; // opsional kalau masih ada logic eksternal
+  onOpenRegister: () => void;
   onOpenForgotPassword: () => void;
 }
 
@@ -73,6 +73,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <Button
           variant="solid_blue"
           onClick={onLogin}
+          fullWidth
           disabled={loading || !email.trim() || !password.trim()}>
           {loading ? "Memproses..." : "Masuk"}
         </Button>
@@ -87,6 +88,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
         <Button
           variant="outlined_yellow"
+          fullWidth
           onClick={onSsoLogin}
           disabled={loading}>
           Masuk dengan SSO
@@ -108,13 +110,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </div>
       </div>
 
-      {/* Dialog Register di tengah */}
       <Dialog
         open={registerOpen}
         onClose={() => setRegisterOpen(false)}
         fullWidth
         maxWidth="md"
-        fullScreen={isMobile} // fullscreen di mobile
+        fullScreen={isMobile}
         PaperProps={{ sx: { borderRadius: isMobile ? 0 : "16px" } }}>
         <DialogTitle
           sx={{

@@ -1,4 +1,10 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api-ecatalogue-staging.online/api/";
+// http.ts
+const RAW_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api-ecatalogue-staging.online/api"; // ← tanpa trailing slash
+const BASE_URL = RAW_BASE_URL.replace(/\/+$/, "");
+
+const join = (base: string, path: string) =>
+  `${base}/${String(path).replace(/^\/+/, "")}`;
 
 type HttpOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -10,7 +16,7 @@ type HttpOptions = {
 export async function http<T = any>(path: string, opts: HttpOptions = {}): Promise<T> {
   const { method = "GET", token, body, headers = {} } = opts;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(join(BASE_URL, path), {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -22,14 +28,12 @@ export async function http<T = any>(path: string, opts: HttpOptions = {}): Promi
   });
 
   const isJson = res.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await res.json() : (await res.text());
+  const data = isJson ? await res.json() : await res.text();
 
   if (!res.ok) {
     const message =
-      (isJson && (data?.message || data?.error)) ||
-      `Request failed (${res.status})`;
+      (isJson && (data?.message || data?.error)) || `Request failed (${res.status})`;
     throw new Error(message);
   }
-
   return data as T;
 }

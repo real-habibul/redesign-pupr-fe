@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import Navbar from "@components/ui/navigation-bar/navigation-bar";
+import Navbar from "@components/common/navigation-bar/navigation-bar";
 
 const HIDE_NAV_ON: string[] = ["/login", "/register"];
 

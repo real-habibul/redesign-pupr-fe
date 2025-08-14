@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Poppins } from "next/font/google";
 import { AlertProvider } from "@components/ui/alert";
-import LayoutShell from "@components/ui/navigation-bar/layout-shell";
+import LayoutShell from "@components/ui/navigation-bar-atom/layout-shell";
 
 const poppins = Poppins({
   subsets: ["latin"],
