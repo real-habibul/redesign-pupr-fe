@@ -1,13 +1,18 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react";
-import {
-  Box,
-  Tabs as MuiTabs,
-  Tab,
-  Button,
-  type ButtonProps,
-} from "@mui/material";
+import { Box, Tabs as MuiTabs, Tab } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
+
+import AppButton from "@components/ui/button";
+
+type CustomVariant =
+  | "solid_blue"
+  | "outlined_yellow"
+  | "text_red"
+  | "text_blue";
+
+type LegacyMuiVariant = "contained" | "outlined" | "text" | undefined;
 
 type TabItem = {
   label: string;
@@ -15,12 +20,23 @@ type TabItem = {
   id?: string;
 };
 
+type ActionButtonProps = {
+  label?: string;
+  variant?: CustomVariant | LegacyMuiVariant;
+  onClick?: () => void;
+  disabled?: boolean;
+  startIcon?: React.ReactNode;
+  endIcon?: React.ReactNode;
+  size?: "small" | "medium" | "large";
+  fullWidth?: boolean;
+  sx?: SxProps<Theme>;
+};
+
 type TabsProps = {
   tabs: ReadonlyArray<TabItem>;
-  actionButton?: (ButtonProps & { label?: string }) | null;
+  actionButton?: ActionButtonProps | null;
   initialLabel?: string;
   className?: string;
-
   value?: number;
   onChange?: (index: number) => void;
 };
@@ -32,38 +48,37 @@ function a11yProps(index: number, baseId: string) {
   };
 }
 
+const mapToCustomVariant = (
+  v: CustomVariant | LegacyMuiVariant | undefined
+): CustomVariant => {
+  if (v === "contained") return "solid_blue";
+  if (v === "outlined") return "outlined_yellow";
+  if (v === "text") return "text_blue";
+  return (v as CustomVariant) ?? "solid_blue";
+};
+
 export default function Tabs({
   tabs,
   actionButton,
   initialLabel,
   className,
-  // 🔧 Controlled props
   value: valueProp,
   onChange,
 }: TabsProps) {
   const baseId = React.useId();
 
-  // 🔧 Tentukan initial index untuk mode uncontrolled
   const uncontrolledInitialIndex = Math.max(
     0,
     initialLabel ? tabs.findIndex((t) => t.label === initialLabel) : 0
   );
-
-  // 🔧 State internal hanya dipakai kalau tidak controlled
   const [internalValue, setInternalValue] = React.useState(
     uncontrolledInitialIndex
   );
-
-  // 🔧 Sumber kebenaran value: controlled > uncontrolled
   const value = valueProp ?? internalValue;
 
   const handleChange = (_: React.SyntheticEvent, newValue: number) => {
-    // 🔧 Kalau ada onChange, panggil supaya parent bisa update state
     onChange?.(newValue);
-    // 🔧 Kalau tidak controlled, update state internal
-    if (valueProp === undefined) {
-      setInternalValue(newValue);
-    }
+    if (valueProp === undefined) setInternalValue(newValue);
   };
 
   return (
@@ -126,21 +141,20 @@ export default function Tabs({
         </Box>
 
         {actionButton ? (
-          <Button
-            variant={actionButton.variant ?? "contained"}
-            size={actionButton.size ?? "medium"}
+          <AppButton
+            variant={mapToCustomVariant(actionButton.variant)}
+            label={actionButton.label ?? "Label"}
             onClick={actionButton.onClick}
-            startIcon={actionButton.startIcon}
-            endIcon={actionButton.endIcon}
+            disabled={actionButton.disabled}
+            fullWidth={actionButton.fullWidth}
             sx={{
-              textTransform: "none",
               borderRadius: "16px",
-              height: 48,
+              height: "48px",
               boxShadow: "none",
-            }}
-            {...actionButton}>
-            {actionButton.label ?? "Label"}
-          </Button>
+              ...(actionButton.sx as object),
+            }}>
+            {actionButton.label}
+          </AppButton>
         ) : null}
       </Box>
 

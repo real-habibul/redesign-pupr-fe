@@ -8,7 +8,7 @@ import {
   getBalaiKerja,
   getInformasiUmum,
   storeInformasiUmum,
-} from "@lib/api/perencanaan-data";
+} from "@lib/api/perencanaan-data/informasi-umum";
 import type {
   Option,
   ManualFormValues,
@@ -60,7 +60,10 @@ export function useInformasiUmum() {
     }
   };
 
-  const submitManual = async (values: ManualFormValues, opts: SubmitOpts = {}) => {
+  const submitManual = async (
+    values: ManualFormValues,
+    opts: SubmitOpts = {}
+  ) => {
     const { redirect = false } = opts;
 
     const payload = {
@@ -75,13 +78,13 @@ export function useInformasiUmum() {
     setIsSubmitting(true);
     try {
       const { data } = await storeInformasiUmum(payload);
-      console.log("[STORE INFORMASI UMUM][manual] resp:", data); 
+      console.log("[STORE INFORMASI UMUM][manual] resp:", data);
 
       if (data.status === "success" && data.data?.id) {
         localStorage.setItem("informasi_umum_id", String(data.data.id));
         show("Data berhasil disimpan.", "success");
         if (redirect) {
-          router.replace("/perencanaan-data/tahap2"); 
+          router.replace("/perencanaan-data/tahap2");
         }
         return true;
       }

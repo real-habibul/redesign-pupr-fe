@@ -13,6 +13,9 @@ interface TextInputProps {
   type?: string;
   placeholder?: string;
   isRequired?: boolean;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  error?: boolean;
+  helperText?: React.ReactNode;
 }
 
 export default function TextInput({
@@ -22,12 +25,24 @@ export default function TextInput({
   type = "text",
   placeholder = "",
   isRequired = false,
+  onBlur,
+  error,
+  helperText,
 }: TextInputProps) {
   const [touched, setTouched] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
 
   const isPasswordField = type === "password";
-  const isError = isRequired && touched && value.trim() === "";
+
+  const internalError = isRequired && touched && value.trim() === "";
+  const mergedError = error ?? internalError;
+  const mergedHelperText =
+    helperText ?? (internalError ? `${label} wajib diisi` : "");
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTouched(true);
+    onBlur?.(e);
+  };
 
   return (
     <TextField
@@ -42,12 +57,12 @@ export default function TextInput({
       }
       value={value}
       onChange={onChange}
-      onBlur={() => setTouched(true)}
+      onBlur={handleBlur}
       type={isPasswordField ? (showPassword ? "text" : "password") : type}
       placeholder={placeholder}
       required={isRequired}
-      error={isError}
-      helperText={isError ? `${label} wajib diisi` : ""}
+      error={mergedError}
+      helperText={mergedHelperText}
       InputLabelProps={{ required: false }}
       fullWidth
       variant="outlined"

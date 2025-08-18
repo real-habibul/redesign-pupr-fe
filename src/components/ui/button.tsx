@@ -1,4 +1,3 @@
-// @components/button.tsx
 import * as React from "react";
 import MuiButton, { ButtonProps as MuiButtonProps } from "@mui/material/Button";
 import { SxProps, Theme } from "@mui/material/styles";
