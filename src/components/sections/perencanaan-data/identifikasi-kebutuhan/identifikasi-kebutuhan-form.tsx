@@ -11,7 +11,7 @@ import { Formik, Form } from "formik";
 import { useRouter } from "next/navigation";
 import Tabs from "@components/ui/tabs";
 import SearchBox from "@components/ui/searchbox";
-import useTahap2Store from "@store/perencanaan-data/identifikasi-kebutuhan/store";
+import useIdentifikasiKebutuhanStore from "@store/perencanaan-data/identifikasi-kebutuhan/store";
 import {
   getProvincesAndCities,
   getIdentifikasiKebutuhan,
@@ -45,7 +45,7 @@ type FilterOption = {
   checked?: boolean;
 };
 
-export default function Tahap2Form() {
+export default function Identifikasi_Kebutuhan_Form() {
   const router = useRouter();
   const { show } = useAlert();
   const {
@@ -55,7 +55,7 @@ export default function Tahap2Form() {
     setSelectedValue,
     setProvincesOptions,
     setInitialValues,
-  } = useTahap2Store();
+  } = useIdentifikasiKebutuhanStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const [materialQuery, setMaterialQuery] = useState("");
@@ -100,7 +100,9 @@ export default function Tahap2Form() {
   }, [setProvincesOptions, setInitialValues, show]);
 
   const navigateToTahap1 = () => {
-    router.push("/perencanaan_data/tahap1?fromTahap2=true");
+    router.push(
+      "/perencanaan_data/informasi-umum?fromidentifikasi-kebutuhan=true"
+    );
   };
 
   const handleSubmit = useCallback(
