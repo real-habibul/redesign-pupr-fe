@@ -1,443 +1,412 @@
 "use client";
-import * as React from "react";
-import {
-  useState,
-  useMemo,
+import React, {
   useCallback,
+  useEffect,
+  useMemo,
+  useState,
   useDeferredValue,
   startTransition,
 } from "react";
-import { FieldArray, FastField, useField } from "formik";
-import type {
-  ProvinceOption,
-  IdentifikasiKebutuhanFormValues,
-} from "../../../../types/perencanaan-data/identifikasi_kebutuhan";
-import { KELOMPOK_PERALATAN_OPTIONS } from "@constants/perencanaan-data/identifikasi-kebutuhan";
+import { Formik, Form } from "formik";
+import { useRouter } from "next/navigation";
+import Tabs from "@components/ui/tabs";
+import SearchBox from "@components/ui/searchbox";
+import useTahap2Store from "@store/perencanaan-data/identifikasi-kebutuhan/store";
+import {
+  getProvincesAndCities,
+  getIdentifikasiKebutuhan,
+  storeIdentifikasiKebutuhan,
+} from "@lib/api/perencanaan-data/identifikasi-kebutuhan";
+import {
+  NUMBER_OF_STEPS,
+  STEP_LABELS,
+  EMPTY_MATERIAL,
+  EMPTY_PERALATAN,
+  EMPTY_TENAGA_KERJA,
+} from "@constants/perencanaan-data/identifikasi-kebutuhan";
+import type { ProvinceOption } from "../../../../types/perencanaan-data/identifikasi_kebutuhan";
+import Stepper from "@components/ui/stepper";
 import Button from "@components/ui/button";
-import Pagination from "@components/ui/pagination";
-import TextInput from "@components/ui/text-input";
-import MUISelect from "@components/ui/select";
+import { useAlert } from "@components/ui/alert";
+import MaterialForm from "./material-form";
+import PeralatanForm from "./peralatan-form";
+import TenagaKerjaForm from "./tenaga-kerja-form";
+import AddRowModal from "@components/sections/perencanaan-data/identifikasi-kebutuhan/add-row-modal";
 
-type Props = {
-  values: IdentifikasiKebutuhanFormValues;
-  setFieldValue: (field: string, value: any) => void;
-  provincesOptions: ProvinceOption[];
-  query: string;
-  filterKeys: string[];
+type Identifikasi_kebutuhan_Form_Values = {
+  materials: any[];
+  peralatans: any[];
+  tenagaKerjas: any[];
 };
 
-const FILTERABLE_KEYS = [
-  "nama_peralatan",
-  "satuan",
-  "spesifikasi",
-  "kapasitas",
-  "kodefikasi",
-  "kelompok_peralatan",
-  "jumlah_kebutuhan",
-  "merk",
-  "provincies_id",
-  "cities_id",
-] as const;
-
-function useDebounced<T>(value: T, delay = 250) {
-  const [v, setV] = React.useState(value);
-  React.useEffect(() => {
-    const t = setTimeout(() => setV(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return v;
-}
-
-function isMatchPeralatan(
-  item: any,
-  q: string,
-  keys: string[] | undefined,
-  provMap: Record<string, string>,
-  cityMap: Record<string, string>
-) {
-  const low = q.toLowerCase();
-  const read = (k: string) => {
-    if (k === "provincies_id")
-      return provMap[String(item?.provincies_id ?? "")] ?? "";
-    if (k === "cities_id") return cityMap[String(item?.cities_id ?? "")] ?? "";
-    return String(item?.[k] ?? "");
-  };
-  if (!keys?.length) {
-    return FILTERABLE_KEYS.map((k) => read(k)).some((v) =>
-      v.toLowerCase().includes(low)
-    );
-  }
-  return keys.some((k) => read(k).toLowerCase().includes(low));
-}
-
-type RowProps = {
-  index: number;
-  values: IdentifikasiKebutuhanFormValues;
-  remove: (i: number) => void;
-  getCityOptions: (
-    prov: string | number | ""
-  ) => { value: string; label: string }[];
-  provSelectOptions: { value: string; label: string }[];
-  kelompokOptions: { value: string; label: string }[];
-  onRemoved: () => void;
+type FilterOption = {
+  label?: string;
+  value: string | number | undefined;
+  checked?: boolean;
 };
 
-const PeralatanRow = React.memo(function PeralatanRow({
-  index: actualIndex,
-  values,
-  remove,
-  getCityOptions,
-  provSelectOptions,
-  kelompokOptions,
-  onRemoved,
-}: RowProps) {
-  const [provField, , provHelpers] = useField<any>(
-    `peralatans.${actualIndex}.provincies_id`
-  );
-  const [cityField, , cityHelpers] = useField<any>(
-    `peralatans.${actualIndex}.cities_id`
-  );
-  const provinceValue = provField.value ?? "";
-  const cityOptions = React.useMemo(
-    () => getCityOptions(provinceValue),
-    [getCityOptions, provinceValue]
-  );
+export default function Tahap2Form() {
+  const router = useRouter();
+  const { show } = useAlert();
+  const {
+    selectedValue,
+    provincesOptions,
+    initialValues,
+    setSelectedValue,
+    setProvincesOptions,
+    setInitialValues,
+  } = useTahap2Store();
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
-  return (
-    <tr>
-      <td className="px-3 py-6 text-center">{actualIndex + 1}</td>
+  const [materialQuery, setMaterialQuery] = useState("");
+  const [peralatanQuery, setPeralatanQuery] = useState("");
+  const [tenagaQuery, setTenagaQuery] = useState("");
+  const [materialFilters, setMaterialFilters] = useState<string[]>([]);
+  const [peralatanFilters, setPeralatanFilters] = useState<string[]>([]);
+  const [tenagaFilters, setTenagaFilters] = useState<string[]>([]);
 
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.nama_peralatan`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Nama Peralatan"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Nama Peralatan"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
+  const debouncedMatQ = useDeferredValue(materialQuery);
+  const debouncedPerQ = useDeferredValue(peralatanQuery);
+  const debouncedTenQ = useDeferredValue(tenagaQuery);
 
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.satuan`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Satuan"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Satuan"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.spesifikasi`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Spesifikasi"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Spesifikasi"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.kapasitas`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Kapasitas"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Kapasitas"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.kodefikasi`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Kodefikasi"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Kodefikasi"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.kelompok_peralatan`}>
-          {({ field, form }: any) => (
-            <MUISelect
-              label="Kelompok Peralatan"
-              options={kelompokOptions}
-              value={field.value ? String(field.value) : ""}
-              onChange={(val: string) => form.setFieldValue(field.name, val)}
-              required
-              placeholder="Pilih Kelompok Peralatan"
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.jumlah_kebutuhan`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Jumlah Kebutuhan"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Jumlah Kebutuhan"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <FastField name={`peralatans.${actualIndex}.merk`}>
-          {({ field, form }: any) => (
-            <TextInput
-              label="Merk"
-              value={field.value ?? ""}
-              onChange={(e) => form.setFieldValue(field.name, e.target.value)}
-              placeholder="Masukkan Merk"
-              isRequired
-            />
-          )}
-        </FastField>
-      </td>
-
-      <td className="px-3 py-6">
-        <MUISelect
-          label="Provinsi"
-          options={provSelectOptions}
-          value={provField.value ? String(provField.value) : ""}
-          onChange={(val: string) => {
-            provHelpers.setValue(val);
-            cityHelpers.setValue("");
-          }}
-          required
-          placeholder="Pilih Provinsi"
-        />
-      </td>
-
-      <td className="px-3 py-6">
-        <MUISelect
-          key={`city-${actualIndex}-${String(provinceValue)}`}
-          label="Kota"
-          options={cityOptions}
-          value={cityField.value ? String(cityField.value) : ""}
-          onChange={(val: string) => cityHelpers.setValue(val)}
-          required
-          placeholder="Pilih Kota"
-        />
-      </td>
-
-      <td className="px-3 py-6 text-center">
-        <Button
-          type="button"
-          variant="text_red"
-          label="Hapus"
-          onClick={() => {
-            remove(actualIndex);
-            onRemoved();
-          }}
-        />
-      </td>
-    </tr>
-  );
-});
-
-export default function PeralatanForm({
-  values,
-  setFieldValue,
-  provincesOptions,
-  query,
-  filterKeys,
-}: Props) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  const handlePageChange = useCallback((p: number) => {
-    startTransition(() => setCurrentPage(p));
-  }, []);
-
-  const debouncedQuery = useDebounced(query, 250);
-  const deferredQuery = useDeferredValue(debouncedQuery);
-
-  const kelompokOptions = useMemo(
-    () =>
-      KELOMPOK_PERALATAN_OPTIONS.map((o) => ({
-        label: o.label,
-        value: String(o.value),
-      })),
-    []
-  );
-
-  const provOptions = useMemo(
-    () =>
-      provincesOptions.map((p) => ({
-        value: String(p.value),
-        label: p.label,
-        cities: p.cities,
-      })),
-    [provincesOptions]
-  );
-
-  const getCityOptions = useCallback(
-    (provValue: string | number | "") => {
-      const sp = provOptions.find((p) => p.value === String(provValue));
-      const cities = sp?.cities ?? [];
-      return cities.map((c) => ({
-        value: String(c.cities_id),
-        label: c.cities_name,
-      }));
-    },
-    [provOptions]
-  );
-
-  const provIdToName = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const p of provOptions) m[p.value] = p.label;
-    return m;
-  }, [provOptions]);
-
-  const cityIdToName = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const p of provOptions) {
-      for (const c of p.cities ?? []) {
-        m[String(c.cities_id)] = c.cities_name;
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getProvincesAndCities();
+        const transformed: ProvinceOption[] = (data?.data ?? []).map(
+          (d: any) => ({
+            value: d.id_province,
+            label: d.province_name,
+            cities: d.cities ?? [],
+          })
+        );
+        setProvincesOptions(transformed);
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("fromTahap3") === "true") {
+          const id = localStorage.getItem("identifikasi_kebutuhan_id");
+          if (id) {
+            const res = await getIdentifikasiKebutuhan(id);
+            setInitialValues({
+              materials: res?.data?.material ?? [],
+              peralatans: res?.data?.peralatan ?? [],
+              tenagaKerjas: res?.data?.tenaga_kerja ?? [],
+            });
+          }
+        }
+      } catch {
+        show("Gagal memuat data provinsi/kota.", "error");
       }
-    }
-    return m;
-  }, [provOptions]);
+    })();
+  }, [setProvincesOptions, setInitialValues, show]);
 
-  const filteredIndices: number[] = useMemo(() => {
-    const q = (deferredQuery ?? "").trim();
-    const keys = filterKeys ?? [];
-    if (!q && !keys.length) return values.peralatans.map((_, i) => i);
-    const list: number[] = [];
-    for (let i = 0; i < values.peralatans.length; i++) {
-      const it = values.peralatans[i];
-      if (isMatchPeralatan(it, q, keys, provIdToName, cityIdToName))
-        list.push(i);
-    }
-    return list;
-  }, [
-    values.peralatans,
-    deferredQuery,
-    filterKeys,
-    provIdToName,
-    cityIdToName,
-  ]);
+  const navigateToTahap1 = () => {
+    router.push("/perencanaan_data/tahap1?fromTahap2=true");
+  };
 
-  const totalFiltered = filteredIndices.length;
-  const totalPages = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
-  const start = (currentPage - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  const visibleIndices = filteredIndices.slice(start, end);
+  const handleSubmit = useCallback(
+    async (values: Identifikasi_kebutuhan_Form_Values) => {
+      const informasiUmumId = localStorage.getItem("informasi_umum_id");
+      const { materials, peralatans, tenagaKerjas } = values;
+      if (!materials.length && !peralatans.length && !tenagaKerjas.length) {
+        show("Minimal harus ada satu data yang diisi.", "error");
+        return;
+      }
+      try {
+        const res = await storeIdentifikasiKebutuhan({
+          material: materials,
+          peralatan: peralatans,
+          tenaga_kerja: tenagaKerjas,
+          informasi_umum_id: informasiUmumId,
+        });
+        if (res?.status === "success") {
+          const identId =
+            res?.data?.material?.[0]?.identifikasi_kebutuhan_id ?? 0;
+          if (identId)
+            localStorage.setItem("identifikasi_kebutuhan_id", String(identId));
+          show("Data berhasil disimpan.", "success");
+          router.replace("/perencanaan_data/tahap3");
+          return;
+        }
+        show(res?.message ?? "Gagal menyimpan data.", "error");
+      } catch {
+        show("Gagal menyimpan data.", "error");
+      }
+    },
+    [show, router]
+  );
 
-  React.useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-    if (currentPage < 1) setCurrentPage(1);
-  }, [totalPages, currentPage]);
+  const onFilterClick = useCallback(
+    (filters: FilterOption[]) => {
+      const keys = (filters ?? [])
+        .filter((f) => !!f.checked)
+        .map((f) => String(f.value ?? ""));
+      startTransition(() => {
+        if (selectedValue === 0) setMaterialFilters(keys);
+        else if (selectedValue === 1) setPeralatanFilters(keys);
+        else setTenagaFilters(keys);
+      });
+    },
+    [selectedValue]
+  );
 
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [deferredQuery, filterKeys]);
+  const onSearch = useCallback(
+    (q: string) => {
+      startTransition(() => {
+        if (selectedValue === 0) setMaterialQuery(q);
+        else if (selectedValue === 1) setPeralatanQuery(q);
+        else setTenagaQuery(q);
+      });
+    },
+    [selectedValue]
+  );
+
+  const filterOptionsByTab = useMemo(() => {
+    if (selectedValue === 0)
+      return [
+        { label: "Nama Material", value: "nama_material", checked: false },
+        { label: "Satuan", value: "satuan", checked: false },
+        { label: "Spesifikasi", value: "spesifikasi", checked: false },
+        { label: "Ukuran", value: "ukuran", checked: false },
+        { label: "Kodefikasi", value: "kodefikasi", checked: false },
+        {
+          label: "Kelompok Material",
+          value: "kelompok_material",
+          checked: false,
+        },
+        {
+          label: "Jumlah Kebutuhan",
+          value: "jumlah_kebutuhan",
+          checked: false,
+        },
+        { label: "Merk", value: "merk", checked: false },
+        { label: "Provinsi", value: "provincies_id", checked: false },
+        { label: "Kota", value: "cities_id", checked: false },
+      ];
+    if (selectedValue === 1)
+      return [
+        { label: "Nama Peralatan", value: "nama_peralatan", checked: false },
+        { label: "Satuan", value: "satuan", checked: false },
+        { label: "Spesifikasi", value: "spesifikasi", checked: false },
+        { label: "Kapasitas", value: "kapasitas", checked: false },
+        { label: "Kodefikasi", value: "kodefikasi", checked: false },
+        {
+          label: "Kelompok Peralatan",
+          value: "kelompok_peralatan",
+          checked: false,
+        },
+        {
+          label: "Jumlah Kebutuhan",
+          value: "jumlah_kebutuhan",
+          checked: false,
+        },
+        { label: "Merk", value: "merk", checked: false },
+        { label: "Provinsi", value: "provincies_id", checked: false },
+        { label: "Kota", value: "cities_id", checked: false },
+      ];
+    return [
+      {
+        label: "Jenis Tenaga Kerja",
+        value: "jenis_tenaga_kerja",
+        checked: false,
+      },
+      { label: "Satuan", value: "satuan", checked: false },
+      { label: "Jumlah Kebutuhan", value: "jumlah_kebutuhan", checked: false },
+      { label: "Kodefikasi", value: "kodefikasi", checked: false },
+      { label: "Provinsi", value: "provincies_id", checked: false },
+      { label: "Kota", value: "cities_id", checked: false },
+    ];
+  }, [selectedValue]);
+
+  const currentQuery =
+    selectedValue === 0
+      ? debouncedMatQ
+      : selectedValue === 1
+      ? debouncedPerQ
+      : debouncedTenQ;
+
+  const currentFilterKeys =
+    selectedValue === 0
+      ? materialFilters
+      : selectedValue === 1
+      ? peralatanFilters
+      : tenagaFilters;
 
   return (
-    <div className="rounded-[16px] overflow-visible">
-      <FieldArray name="peralatans">
-        {({ remove }) => (
-          <div>
-            <div className="rounded-[16px] border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="table-auto w-full min-w-max">
-                  <thead>
-                    <tr className="bg-solid_basic_blue_100 text-left text-emphasis_light_on_surface_high uppercase tracking-wider">
-                      <th className="px-3 py-6 text-base font-normal">No</th>
-                      {[
-                        "Nama Peralatan",
-                        "Satuan",
-                        "Spesifikasi",
-                        "Kapasitas",
-                        "Kodefikasi",
-                        "Kelompok Peralatan",
-                        "Jumlah Kebutuhan",
-                        "Merk",
-                        "Provinsi",
-                        "Kota",
-                        "Aksi",
-                      ].map((h) => (
-                        <th key={h} className="px-3 py-6 text-base font-normal">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
+    <div className="p-8">
+      <div className="space-y-3 pt-8">
+        <h3 className="text-H3 text-emphasis-on_surface-high">
+          Tahap Perencanaan Data
+        </h3>
+        <div className="justify-center items-center space-x-4 mt-3 bg-neutral-100 px-6 pb-8 pt-16 rounded-[16px]">
+          <Stepper
+            currentStep={1}
+            numberOfSteps={NUMBER_OF_STEPS}
+            labels={STEP_LABELS}
+          />
+        </div>
+        <h4 className="text-H4 text-emphasis-on_surface-high">
+          Identifikasi Kebutuhan
+        </h4>
+      </div>
 
-                  <tbody className="bg-surface_light_background">
-                    {visibleIndices.map((actualIndex) => (
-                      <PeralatanRow
-                        key={actualIndex}
-                        index={actualIndex}
-                        values={values}
-                        remove={remove}
-                        getCityOptions={getCityOptions}
-                        provSelectOptions={provOptions.map((p) => ({
-                          value: p.value,
-                          label: p.label,
-                        }))}
-                        kelompokOptions={kelompokOptions}
-                        onRemoved={() => {
-                          const nextTotal = Math.max(0, totalFiltered - 1);
-                          const nextTotalPages = Math.max(
-                            1,
-                            Math.ceil(nextTotal / itemsPerPage)
-                          );
-                          if (currentPage > nextTotalPages)
-                            setCurrentPage(nextTotalPages);
-                        }}
-                      />
-                    ))}
+      <div className="space-y-4">
+        <Formik<Identifikasi_kebutuhan_Form_Values>
+          initialValues={initialValues}
+          onSubmit={handleSubmit}
+          enableReinitialize>
+          {({ values, setFieldValue }) => (
+            <Form>
+              <div className="relative mt-3 mb-4 ">
+                <div className="mt-[6px] flex items-center gap-4 md:absolute md:right-0 md:top-0 md:z-10 md:[&>*]:h-12 md:[&>*]:flex md:[&>*]:items-center">
+                  <SearchBox
+                    placeholder={
+                      selectedValue === 0
+                        ? "Cari Material..."
+                        : selectedValue === 1
+                        ? "Cari Peralatan..."
+                        : "Cari Tenaga Kerja..."
+                    }
+                    onSearch={onSearch}
+                    withFilter
+                    filterOptions={filterOptionsByTab as any}
+                    onFilterClick={onFilterClick as any}
+                    className="h-12"
+                  />
+                  <Button
+                    variant="solid_blue"
+                    fullWidth={false}
+                    label="Tambah Data"
+                    onClick={() => setIsAddOpen(true)}
+                    sx={{ height: 48 }}
+                  />
+                </div>
 
-                    {visibleIndices.length === 0 && (
-                      <tr>
-                        <td
-                          className="px-3 py-6 text-center text-emphasis_light_on_surface_medium"
-                          colSpan={12}>
-                          Data tidak ditemukan
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                <Tabs
+                  value={selectedValue}
+                  onChange={(idx) => {
+                    setSelectedValue(idx as 0 | 1 | 2);
+                    setMaterialQuery("");
+                    setPeralatanQuery("");
+                    setTenagaQuery("");
+                    setMaterialFilters([]);
+                    setPeralatanFilters([]);
+                    setTenagaFilters([]);
+                  }}
+                  className="my-0"
+                  tabs={[
+                    {
+                      label: "Material",
+                      content: (
+                        <MaterialForm
+                          values={{
+                            materials: values.materials ?? [],
+                            peralatans: values.peralatans ?? [],
+                            tenagaKerjas: values.tenagaKerjas ?? [],
+                          }}
+                          setFieldValue={setFieldValue}
+                          provincesOptions={
+                            (provincesOptions ?? []) as ProvinceOption[]
+                          }
+                          query={currentQuery}
+                          filterKeys={currentFilterKeys}
+                        />
+                      ),
+                    },
+                    {
+                      label: "Peralatan",
+                      content: (
+                        <PeralatanForm
+                          values={{
+                            materials: values.materials ?? [],
+                            peralatans: values.peralatans ?? [],
+                            tenagaKerjas: values.tenagaKerjas ?? [],
+                          }}
+                          setFieldValue={setFieldValue}
+                          provincesOptions={
+                            (provincesOptions ?? []) as ProvinceOption[]
+                          }
+                          query={currentQuery}
+                          filterKeys={currentFilterKeys}
+                        />
+                      ),
+                    },
+                    {
+                      label: "Tenaga Kerja",
+                      content: (
+                        <TenagaKerjaForm
+                          values={{
+                            materials: values.materials ?? [],
+                            peralatans: values.peralatans ?? [],
+                            tenagaKerjas: values.tenagaKerjas ?? [],
+                          }}
+                          setFieldValue={setFieldValue}
+                          provincesOptions={
+                            (provincesOptions ?? []) as ProvinceOption[]
+                          }
+                          query={currentQuery}
+                          filterKeys={currentFilterKeys}
+                        />
+                      ),
+                    },
+                  ]}
+                />
               </div>
-            </div>
 
-            <Pagination
-              currentPage={currentPage}
-              itemsPerPage={itemsPerPage}
-              totalData={totalFiltered}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        )}
-      </FieldArray>
+              {isAddOpen && (
+                <AddRowModal
+                  handleClose={() => setIsAddOpen(false)}
+                  currentIndex={selectedValue}
+                  handleAddRow={(rowsToAdd: number) => {
+                    if (rowsToAdd <= 0) return;
+                    if (selectedValue === 0) {
+                      const next = Array.from({ length: rowsToAdd }, () => ({
+                        ...EMPTY_MATERIAL,
+                      }));
+                      setFieldValue("materials", [
+                        ...(values.materials ?? []),
+                        ...next,
+                      ]);
+                    } else if (selectedValue === 1) {
+                      const next = Array.from({ length: rowsToAdd }, () => ({
+                        ...EMPTY_PERALATAN,
+                      }));
+                      setFieldValue("peralatans", [
+                        ...(values.peralatans ?? []),
+                        ...next,
+                      ]);
+                    } else {
+                      const next = Array.from({ length: rowsToAdd }, () => ({
+                        ...EMPTY_TENAGA_KERJA,
+                      }));
+                      setFieldValue("tenagaKerjas", [
+                        ...(values.tenagaKerjas ?? []),
+                        ...next,
+                      ]);
+                    }
+                    setIsAddOpen(false);
+                  }}
+                />
+              )}
+
+              <div className="flex flex-row justify-end items-center gap-4 mt-3 bg-neutral-100 px-6 py-8 rounded-[16px]">
+                <Button
+                  type="button"
+                  variant="outlined_yellow"
+                  fullWidth={false}
+                  label="Kembali"
+                  onClick={navigateToTahap1}
+                />
+                <Button
+                  type="submit"
+                  variant="solid_blue"
+                  fullWidth={false}
+                  label="Simpan & Lanjut"
+                />
+              </div>
+            </Form>
+          )}
+        </Formik>
+      </div>
     </div>
   );
 }

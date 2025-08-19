@@ -1,112 +1,127 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, startTransition } from "react";
 import { useRouter } from "next/navigation";
-import manualstore from "@store/perencanaan-data/informasi-umum/store";
 import { useAlert } from "@components/ui/alert";
 import {
   getBalaiKerja,
   getInformasiUmum,
-  storeInformasiUmum,
 } from "@lib/api/perencanaan-data/informasi-umum";
+import useInformasiUmumStore from "@store/perencanaan-data/informasi-umum/store";
 import type {
-  Option,
   ManualFormValues,
-  SubmitType,
+  Option,
 } from "../../types/perencanaan-data/informasi-umum";
 
 type SubmitOpts = { redirect?: boolean };
 
-export function useInformasiUmum() {
-  const [balaiOptions, setBalaiOptions] = useState<Option[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const toNum = (v: string | number | null | undefined) =>
+  typeof v === "string" ? Number.parseInt(v, 10) : Number(v ?? 0);
 
+export function useInformasiUmum() {
   const router = useRouter();
   const { show } = useAlert();
-  const { setInitialValueManual } = manualstore();
+  const aliveRef = useRef(true);
+
+  const {
+    balaiOptions,
+    isSubmitting,
+    initialValueManual,
+    setBalaiOptions,
+    setInitialValueManual,
+    submitManual: submitManualFromStore,
+  } = useInformasiUmumStore();
 
   const fetchBalaiOptions = async () => {
     try {
-      const { data } = await getBalaiKerja();
-      if (Array.isArray(data?.data)) {
-        setBalaiOptions(
-          data.data.map((item) => ({ value: item.id, label: item.nama }))
-        );
-      }
-    } catch (e) {
-      console.error("Error fetching balai:", e);
+      const list = await getBalaiKerja();
+      const options = list.map((b) => ({
+        value: b.id,
+        label: b.nama,
+      })) as Option[];
+      if (aliveRef.current) setBalaiOptions(options);
+    } catch (err) {
+      console.error("fetchBalaiOptions error:", err);
       show("Gagal memuat daftar balai.", "error");
     }
   };
 
   const fetchInformasiUmum = async (id: string) => {
     try {
-      const { data } = await getInformasiUmum(id);
-      if (data?.data) {
-        const selectedBalai = balaiOptions.find(
-          (opt) => opt.value === parseInt(data.data!.nama_balai, 10)
-        );
-        setInitialValueManual?.({
-          kodeRup: data.data.kode_rup,
-          namaPaket: data.data.nama_paket,
-          namaPpk: data.data.nama_ppk,
-          jabatanPpk: data.data.jabatan_ppk,
-          namaBalai: selectedBalai ?? null,
+      const d = await getInformasiUmum(id);
+      if (!d) return;
+      if (balaiOptions.length === 0) await fetchBalaiOptions();
+      const targetId = toNum(d.nama_balai);
+      const selected =
+        balaiOptions.find((opt) => toNum(opt.value) === targetId) ?? null;
+      if (aliveRef.current) {
+        setInitialValueManual({
+          kodeRup: d.kode_rup ?? "",
+          namaPaket: d.nama_paket ?? "",
+          namaPpk: d.nama_ppk ?? "",
+          jabatanPpk: d.jabatan_ppk ?? "",
+          namaBalai: (selected as Option | null) ?? null,
         });
       }
-    } catch (e) {
-      console.error("Gagal memuat data Informasi Umum:", e);
+    } catch (err) {
+      console.error("fetchInformasiUmum error:", err);
       show("Gagal memuat data Informasi Umum.", "error");
     }
   };
 
+  const hardRedirect = (href: string) => {
+    if (typeof window !== "undefined") window.location.assign(href);
+  };
+
+  const targetPath = "/perencanaan-data/identifikasi-kebutuhan";
+
   const submitManual = async (
     values: ManualFormValues,
-    opts: SubmitOpts = {}
+    opts: SubmitOpts = { redirect: true }
   ) => {
-    const { redirect = false } = opts;
-
-    const payload = {
-      tipe_informasi_umum: "manual",
-      kode_rup: values.kodeRup,
-      nama_paket: values.namaPaket,
-      nama_ppk: values.namaPpk,
-      jabatan_ppk: values.jabatanPpk,
-      nama_balai: Number(values.namaBalai?.value ?? 0),
-    };
-
-    setIsSubmitting(true);
     try {
-      const { data } = await storeInformasiUmum(payload);
-      console.log("[STORE INFORMASI UMUM][manual] resp:", data);
-
-      if (data.status === "success" && data.data?.id) {
-        localStorage.setItem("informasi_umum_id", String(data.data.id));
+      const ok = await submitManualFromStore(values);
+      if (ok) {
         show("Data berhasil disimpan.", "success");
-        if (redirect) {
-          router.replace("/perencanaan-data/tahap2");
+        if (opts.redirect) {
+          startTransition(() => {
+            router.push(targetPath);
+          });
+          setTimeout(() => {
+            if (
+              typeof window !== "undefined" &&
+              !window.location.pathname.endsWith(targetPath)
+            ) {
+              hardRedirect(targetPath);
+            }
+          }, 150);
         }
-        return true;
+      } else {
+        show("Gagal mengirim data ke API.", "error");
       }
-      show(data?.message || "Gagal mengirim data.", "error");
-      return false;
-    } catch (e) {
-      console.error("Submit error:", e);
+      return ok;
+    } catch (err) {
+      console.error("submitManual error:", err);
       show("Terjadi kesalahan koneksi.", "error");
       return false;
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
+    aliveRef.current = true;
     fetchBalaiOptions();
+    return () => {
+      aliveRef.current = false;
+    };
   }, []);
 
   return {
     balaiOptions,
     isSubmitting,
+    initialValueManual,
+    fetchBalaiOptions,
     fetchInformasiUmum,
     submitManual,
+    setInitialValueManual,
   };
 }

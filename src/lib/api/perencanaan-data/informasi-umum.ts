@@ -1,21 +1,32 @@
-import { api } from "../client";
+import { http } from "../https";
 import { ENDPOINTS } from "@constants/endpoints";
 import type {
   ApiBalaiResponse,
+  ApiBalaiItem,
   ApiInformasiUmumResponse,
+  InformasiUmumData,
 } from "../../../types/perencanaan-data/informasi-umum";
 
-export function getBalaiKerja() {
-  return api.get<ApiBalaiResponse>(ENDPOINTS.getBalaiKerja);
+export async function getBalaiKerja(): Promise<ApiBalaiItem[]> {
+  const { data } = await http.get<ApiBalaiResponse>(ENDPOINTS.getBalaiKerja);
+  return data?.data ?? [];
 }
 
-export function getInformasiUmum(id: string) {
-  return api.get<ApiInformasiUmumResponse>(ENDPOINTS.getInformasiUmum(id));
+export async function getInformasiUmum(
+  id: string
+): Promise<InformasiUmumData | null> {
+  const { data } = await http.get<ApiInformasiUmumResponse>(
+    ENDPOINTS.getInformasiUmum(id)
+  );
+  return data?.data ?? null;
 }
 
-export function storeInformasiUmum(payload: unknown) {
-  return api.post<ApiInformasiUmumResponse>(
+export async function storeInformasiUmum(
+  payload: Record<string, unknown>
+): Promise<ApiInformasiUmumResponse> {
+  const { data } = await http.post<ApiInformasiUmumResponse>(
     ENDPOINTS.storeInformasiUmum,
     payload
   );
+  return data;
 }

@@ -35,7 +35,7 @@ type Actions = {
   setIsAlertOpen: (b: boolean) => void;
 };
 
-const useTahap2Store = create<State & Actions>((set) => ({
+const useIdentifikasiKebutuhanStore = create<State & Actions>((set) => ({
   selectedValue: 0,
   provincesOptions: [],
   initialValues: { materials: [], peralatans: [], tenagaKerjas: [] },
@@ -62,4 +62,4 @@ const useTahap2Store = create<State & Actions>((set) => ({
   setIsAlertOpen: (b) => set({ isAlertOpen: b }),
 }));
 
-export default useTahap2Store;
+export default useIdentifikasiKebutuhanStore;

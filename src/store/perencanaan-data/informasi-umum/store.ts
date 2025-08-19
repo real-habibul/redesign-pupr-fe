@@ -27,7 +27,9 @@ export interface Informasi_umum_state {
   setIsSubmitting: (value: boolean) => void;
 
   balaiOptions: NumberOption[];
-  setBalaiOptions: (value: Array<{ value: string | number; label: string }>) => void;
+  setBalaiOptions: (
+    value: Array<{ value: string | number; label: string }>
+  ) => void;
 
   submitManual: (values: ManualFormValues) => Promise<boolean>;
 }
@@ -37,7 +39,8 @@ const toNumber = (v: string | number): number =>
 
 const normalizeNamaBalai = (
   opt: { value: string | number; label: string } | null
-): NumberOption | null => (opt ? { value: toNumber(opt.value), label: opt.label } : null);
+): NumberOption | null =>
+  opt ? { value: toNumber(opt.value), label: opt.label } : null;
 
 const normalizeValues = (v: ManualFormValues): ManualFormValues => ({
   ...v,
@@ -55,7 +58,8 @@ export const useInformasiUmumStore = create<Informasi_umum_state>((set) => ({
     namaPpk: "",
     jabatanPpk: "",
   },
-  setInitialValueManual: (value) => set({ initialValueManual: normalizeValues(value) }),
+  setInitialValueManual: (value) =>
+    set({ initialValueManual: normalizeValues(value) }),
 
   alertMessage: "",
   alertSeverity: "info",
@@ -80,7 +84,7 @@ export const useInformasiUmumStore = create<Informasi_umum_state>((set) => ({
     set({ isSubmitting: true });
     try {
       const normalized = normalizeValues(values);
-      const res = await submitInformasiUmum(normalized); // <- typed di service
+      const res = await submitInformasiUmum(normalized);
       if (res.status === "success") {
         set({
           alertMessage: "Data berhasil Disimpan.",

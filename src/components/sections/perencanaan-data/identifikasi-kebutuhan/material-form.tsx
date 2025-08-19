@@ -21,7 +21,7 @@ import MUISelect from "@components/ui/select";
 type Props = {
   values: IdentifikasiKebutuhanFormValues;
   setFieldValue: (field: string, value: any) => void;
-  provincesOptions: ProvinceOption[];
+  provincesOptions?: ProvinceOption[];
   query: string;
   filterKeys: string[];
 };
@@ -95,7 +95,6 @@ const MaterialRow = React.memo(function MaterialRow({
     `materials.${actualIndex}.cities_id`
   );
   const [idField] = useField<any>(`materials.${actualIndex}.id`);
-
   const provinceValue = provField.value ?? "";
   const cityOptions = React.useMemo(
     () => getCityOptions(provinceValue),
@@ -105,7 +104,6 @@ const MaterialRow = React.memo(function MaterialRow({
   return (
     <tr>
       <td className="px-3 py-6 text-center">{actualIndex + 1}</td>
-
       <td className="px-3 py-6">
         <input type="hidden" {...idField} />
         <FastField name={`materials.${actualIndex}.nama_material`}>
@@ -120,7 +118,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.satuan`}>
           {({ field, form }: any) => (
@@ -134,7 +131,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.spesifikasi`}>
           {({ field, form }: any) => (
@@ -148,7 +144,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.ukuran`}>
           {({ field, form }: any) => (
@@ -162,7 +157,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.kodefikasi`}>
           {({ field, form }: any) => (
@@ -176,7 +170,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.kelompok_material`}>
           {({ field, form }: any) => (
@@ -191,7 +184,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.jumlah_kebutuhan`}>
           {({ field, form }: any) => (
@@ -205,7 +197,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <FastField name={`materials.${actualIndex}.merk`}>
           {({ field, form }: any) => (
@@ -219,7 +210,6 @@ const MaterialRow = React.memo(function MaterialRow({
           )}
         </FastField>
       </td>
-
       <td className="px-3 py-6">
         <MUISelect
           label="Provinsi"
@@ -233,7 +223,6 @@ const MaterialRow = React.memo(function MaterialRow({
           placeholder="Pilih Provinsi"
         />
       </td>
-
       <td className="px-3 py-6">
         <MUISelect
           key={`city-${actualIndex}-${String(provinceValue)}`}
@@ -245,7 +234,6 @@ const MaterialRow = React.memo(function MaterialRow({
           placeholder="Pilih Kota"
         />
       </td>
-
       <td className="px-3 py-6 text-center">
         <Button
           type="button"
@@ -270,11 +258,10 @@ export default function MaterialForm({
 }: Props) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const handlePageChange = useCallback((p: number) => {
-    startTransition(() => setCurrentPage(p));
-  }, []);
-
+  const handlePageChange = useCallback(
+    (p: number) => startTransition(() => setCurrentPage(p)),
+    []
+  );
   const debouncedQuery = useDebounced(query, 250);
   const deferredQuery = useDeferredValue(debouncedQuery);
 
@@ -289,10 +276,10 @@ export default function MaterialForm({
 
   const provOptions = useMemo(
     () =>
-      provincesOptions.map((p) => ({
+      (provincesOptions ?? []).map((p) => ({
         value: String(p.value),
         label: p.label,
-        cities: p.cities,
+        cities: p.cities ?? [],
       })),
     [provincesOptions]
   );
@@ -318,9 +305,7 @@ export default function MaterialForm({
   const cityIdToName = React.useMemo(() => {
     const m: Record<string, string> = {};
     for (const p of provOptions) {
-      for (const c of p.cities ?? []) {
-        m[String(c.cities_id)] = c.cities_name;
-      }
+      for (const c of p.cities ?? []) m[String(c.cities_id)] = c.cities_name;
     }
     return m;
   }, [provOptions]);
@@ -328,9 +313,9 @@ export default function MaterialForm({
   const filteredIndices: number[] = useMemo(() => {
     const q = (deferredQuery ?? "").trim();
     const keys = filterKeys ?? [];
-    if (!q && !keys.length) return values.materials.map((_, i) => i);
+    if (!q && !keys.length) return (values.materials ?? []).map((_, i) => i);
     const list: number[] = [];
-    for (let i = 0; i < values.materials.length; i++) {
+    for (let i = 0; i < (values.materials ?? []).length; i++) {
       const it = values.materials[i];
       if (isMatchMaterial(it, q, keys, provIdToName, cityIdToName))
         list.push(i);
@@ -383,7 +368,6 @@ export default function MaterialForm({
                       ))}
                     </tr>
                   </thead>
-
                   <tbody className="bg-surface_light_background">
                     {visibleIndices.map((actualIndex) => (
                       <MaterialRow
@@ -408,7 +392,6 @@ export default function MaterialForm({
                         }}
                       />
                     ))}
-
                     {visibleIndices.length === 0 && (
                       <tr>
                         <td
@@ -422,7 +405,6 @@ export default function MaterialForm({
                 </table>
               </div>
             </div>
-
             <Pagination
               currentPage={currentPage}
               itemsPerPage={itemsPerPage}

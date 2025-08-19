@@ -8,6 +8,7 @@ import {
   type FieldProps,
   type FormikHelpers,
 } from "formik";
+import { useRouter } from "next/navigation";
 import TextInput from "@components/ui/text-input";
 import MUISelect from "@components/ui/select";
 import Button from "@components/ui/button";
@@ -36,6 +37,7 @@ const ManualForm: React.FC<ManualFormProps> = ({
   hide = true,
   balaiOptions = [],
 }) => {
+  const router = useRouter();
   const { submitManual } = useInformasiUmum();
 
   const selectOptions = React.useMemo(
@@ -47,7 +49,10 @@ const ManualForm: React.FC<ManualFormProps> = ({
     values: ManualFormValues,
     _helpers: FormikHelpers<ManualFormValues>
   ) => {
-    await submitManual(values, { redirect: false });
+    const ok = await submitManual(values, { redirect: false });
+    if (ok) {
+      router.push("/perencanaan-data/identifikasi-kebutuhan");
+    }
   };
 
   return (

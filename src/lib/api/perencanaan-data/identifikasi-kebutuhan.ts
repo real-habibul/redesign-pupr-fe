@@ -1,4 +1,5 @@
-import axios from "axios";
+import { http } from "../https";
+import { ENDPOINTS } from "@constants/endpoints";
 import type {
   ProvincesApiResponse,
   IdentifikasiKebutuhanApi,
@@ -6,18 +7,16 @@ import type {
   StoreIdentifikasiResponse,
 } from "../../../types/perencanaan-data/identifikasi_kebutuhan";
 
-const http = axios.create({
-  baseURL: "https://api-ecatalogue-staging.online",
-});
-
 export async function getProvincesAndCities() {
-  const res = await http.get<ProvincesApiResponse>("/api/provinces-and-cities");
+  const res = await http.get<ProvincesApiResponse>(
+    ENDPOINTS.provincesAndCities
+  );
   return res.data;
 }
 
 export async function getIdentifikasiKebutuhan(id: string | number) {
   const res = await http.get<IdentifikasiKebutuhanApi>(
-    `/api/perencanaan-data/get-identifikasi-kebutuhan/${id}`
+    ENDPOINTS.getIdentifikasiKebutuhan(id)
   );
   return res.data;
 }
@@ -29,7 +28,7 @@ export async function storeIdentifikasiKebutuhan(payload: {
   informasi_umum_id: string | number | null;
 }) {
   const res = await http.post<StoreIdentifikasiResponse>(
-    "/api/perencanaan-data/store-identifikasi-kebutuhan",
+    ENDPOINTS.storeIdentifikasiKebutuhan,
     payload
   );
   return res.data;
