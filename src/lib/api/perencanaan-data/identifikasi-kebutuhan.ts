@@ -1,4 +1,4 @@
-import { http } from "../https";
+import { http } from "@lib/api/https";
 import { ENDPOINTS } from "@constants/endpoints";
 import type {
   ProvincesApiResponse,
