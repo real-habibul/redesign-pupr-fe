@@ -44,7 +44,7 @@ export const NAV_LINKS: LinkItem[] = [
 
   {
     href: "/perencanaan-data/identifikasi-kebutuhan",
-    label: "Identifikasi Kebutuhan",
+    label: "Perencanaan Data",
     activePath: "/perencanaan-data/identifikasi-kebutuhan",
     roles: [],
   },

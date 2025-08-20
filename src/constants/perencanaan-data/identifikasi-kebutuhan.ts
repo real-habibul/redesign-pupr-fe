@@ -3,7 +3,7 @@ import type {
   Peralatan,
   TenagaKerja,
   Option,
-} from "../../types/perencanaan-data/identifikasi_kebutuhan";
+} from "../../types/perencanaan-data/identifikasi-kebutuhan";
 
 export const NUMBER_OF_STEPS = 4;
 

@@ -1,0 +1,143 @@
+"use client";
+
+import * as React from "react";
+import { useMemo } from "react";
+import { useFormikContext } from "formik";
+import DataTableMui, { type ColumnDef } from "@components/ui/table";
+import type {
+  FormValues,
+  VendorItem,
+  VendorId,
+} from "../../../../../types/perencanaan-data/shortlist-vendor";
+
+type Props = {
+  rows: VendorItem[];
+  hide?: boolean;
+  currentPage: number;
+  itemsPerPage: number;
+  onPageChange: (p: number) => void;
+  query?: string;
+  filterKeys?: Array<keyof VendorItem>;
+};
+
+export default function TenagaKerjaShortlist({
+  rows,
+  hide,
+  currentPage,
+  itemsPerPage,
+  onPageChange,
+  query = "",
+  filterKeys = [],
+}: Props) {
+  const { values, setFieldValue } = useFormikContext<FormValues>();
+  const key: keyof FormValues = "tenaga_kerja";
+
+  const q = (query ?? "").trim().toLowerCase();
+  const colsToScan = filterKeys?.length
+    ? filterKeys
+    : ([
+        "nama_vendor",
+        "sumber_daya",
+        "pemilik_vendor",
+        "alamat",
+        "kontak",
+      ] as Array<keyof VendorItem>);
+
+  const filtered = React.useMemo(
+    () =>
+      q
+        ? rows.filter((r) =>
+            colsToScan.some((k) =>
+              String(r?.[k] ?? "")
+                .toLowerCase()
+                .includes(q)
+            )
+          )
+        : rows,
+    [rows, q, colsToScan]
+  );
+
+  const isChecked = React.useCallback(
+    (id: VendorId) => values[key].some((i) => i.value === id && i.checked),
+    [values, key]
+  );
+
+  const setChecked = React.useCallback(
+    (id: VendorId, next: boolean) => {
+      const arr = values[key];
+      const idx = arr.findIndex((i) => i.value === id);
+      const ret = [...arr];
+      if (idx >= 0) {
+        const curr = ret[idx];
+        const updated = { ...curr, checked: next };
+        if (!updated.checked) ret.splice(idx, 1);
+        else ret[idx] = updated;
+      } else if (next) {
+        ret.push({ value: id, checked: true });
+      }
+      setFieldValue(key, ret);
+    },
+    [values, key, setFieldValue]
+  );
+
+  const setAllVisible = React.useCallback(
+    (rows: VendorItem[], next: boolean) => {
+      const ids = new Set(rows.map((r) => String(r.id)));
+      const base = values[key].filter((i) => !ids.has(String(i.value)));
+      const additions = next
+        ? rows.map((r) => ({ value: r.id, checked: true as const }))
+        : [];
+      setFieldValue(key, [...base, ...additions]);
+    },
+    [values, key, setFieldValue]
+  );
+
+  const columns: ColumnDef<VendorItem>[] = useMemo(
+    () => [
+      {
+        key: "nama_vendor",
+        header: "Responden/Vendor",
+        cell: (row) => row.nama_vendor,
+      },
+      {
+        key: "sumber_daya",
+        header: "Sumber Daya",
+        cell: (row) => row.sumber_daya ?? "-",
+      },
+      {
+        key: "pemilik_vendor",
+        header: "Pemilik Vendor",
+        cell: (row) => row.pemilik_vendor ?? "-",
+      },
+      { key: "alamat", header: "Alamat", cell: (row) => row.alamat ?? "-" },
+      { key: "kontak", header: "Kontak", cell: (row) => row.kontak ?? "-" },
+    ],
+    []
+  );
+
+  if (hide) return null;
+
+  return (
+    <DataTableMui<VendorItem>
+      columns={columns}
+      data={filtered}
+      striped
+      stickyHeader
+      pagination={{
+        currentPage,
+        itemsPerPage,
+        total: filtered.length,
+        onPageChange,
+      }}
+      selection={{
+        selectable: true,
+        useMuiCheckbox: false,
+        isSelected: (row) => isChecked(row.id),
+        onToggleRow: (row, next) => setChecked(row.id, next),
+        onToggleAllVisible: (visibleRows, next) =>
+          setAllVisible(visibleRows, next),
+        selectHeader: "Pilih",
+      }}
+    />
+  );
+}

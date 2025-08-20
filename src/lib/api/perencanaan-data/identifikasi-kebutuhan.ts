@@ -5,7 +5,7 @@ import type {
   IdentifikasiKebutuhanApi,
   IdentifikasiKebutuhanFormValues,
   StoreIdentifikasiResponse,
-} from "../../../types/perencanaan-data/identifikasi_kebutuhan";
+} from "../../../types/perencanaan-data/identifikasi-kebutuhan";
 
 export async function getProvincesAndCities() {
   const res = await http.get<ProvincesApiResponse>(

@@ -11,7 +11,7 @@ import {
 import type {
   ProvinceOption,
   IdentifikasiKebutuhanFormValues,
-} from "../../../../types/perencanaan-data/identifikasi_kebutuhan";
+} from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import Pagination from "@components/ui/pagination";
 import TenagaKerjaRow, { Option } from "./tenaga-kerja-row";
 import {

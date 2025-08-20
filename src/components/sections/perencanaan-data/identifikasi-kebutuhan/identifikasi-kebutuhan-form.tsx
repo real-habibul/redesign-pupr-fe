@@ -24,7 +24,7 @@ import {
   EMPTY_PERALATAN,
   EMPTY_TENAGA_KERJA,
 } from "@constants/perencanaan-data/identifikasi-kebutuhan";
-import type { ProvinceOption } from "../../../../types/perencanaan-data/identifikasi_kebutuhan";
+import type { ProvinceOption } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import Stepper from "@components/ui/stepper";
 import Button from "@components/ui/button";
 import { useAlert } from "@components/ui/alert";

@@ -5,7 +5,7 @@ import type {
   ProvinceOption,
   IdentifikasiKebutuhanFormValues,
   Severity,
-} from "../../../types/perencanaan-data/identifikasi_kebutuhan";
+} from "../../../types/perencanaan-data/identifikasi-kebutuhan";
 
 type State = {
   selectedValue: 0 | 1 | 2;
