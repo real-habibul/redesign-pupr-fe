@@ -2,6 +2,7 @@ import "./globals.css";
 import { Poppins } from "next/font/google";
 import { AlertProvider } from "@components/ui/alert";
 import LayoutShell from "@components/ui/navigation-bar-atom/layout-shell";
+import AlertBridge from "@components/ui/alert-bridge";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${poppins.variable} font-sans antialiased`}>
         <AlertProvider>
+          <AlertBridge />
           <LayoutShell>{children}</LayoutShell>
         </AlertProvider>
       </body>

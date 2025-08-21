@@ -1,9 +1,10 @@
 "use client";
 import * as React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Stepper from "@components/ui/stepper";
 import Button from "@components/ui/button";
+import SearchBox from "@components/ui/searchbox";
 import IdentifikasiTabs from "@components/sections/perencanaan-data/perancangan-kuesioner/identifikasi-tabs";
 import InfoUmumCard from "@components/sections/perencanaan-data/perancangan-kuesioner/info-umum-card";
 import VendorTable from "@components/sections/perencanaan-data/perancangan-kuesioner/vendor-table";
@@ -20,7 +21,6 @@ import type {
   PeralatanItem,
   TenagaKerjaItem,
   VendorItem,
-  FilterOption,
 } from "../../../../types/perencanaan-data/perancangan-kuesioner";
 import {
   Dialog,
@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
+import { useTahap4FiltersStore } from "../../../../store/perencanaan-data/perancangan-kuesioner/store";
 
 const NUMBER_OF_STEPS = 4;
 const STEP_LABELS = [
@@ -37,7 +38,7 @@ const STEP_LABELS = [
   "Perancangan Kuesioner",
 ];
 
-export default function Tahap4Section() {
+export default function Perancangan_Kuesioner_Section() {
   const [currentStep] = useState(3);
   const [info, setInfo] = useState<CommonInformation>({} as CommonInformation);
   const [materials, setMaterials] = useState<MaterialItem[]>([]);
@@ -48,62 +49,33 @@ export default function Tahap4Section() {
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const { vendorFilters, setVendorFilters } = useTahap4FiltersStore();
+  const [query, setQuery] = useState("");
+
   const informasiUmumId =
     typeof window !== "undefined"
       ? localStorage.getItem("informasi_umum_id")
       : null;
 
-  const filterOptionsMaterial: FilterOption[] = [
-    { label: "Nama Material", accessor: "nama_material", checked: false },
-    { label: "Satuan", accessor: "satuan", checked: false },
-    { label: "Spesifikasi", accessor: "spesifikasi", checked: false },
-    { label: "Ukuran", accessor: "ukuran", checked: false },
-    { label: "Kodefikasi", accessor: "kodefikasi", checked: false },
-    {
-      label: "Kelompok Material",
-      accessor: "kelompok_material",
-      checked: false,
-    },
-    { label: "Jumlah Kebutuhan", accessor: "jumlah_kebutuhan", checked: false },
-    { label: "Merk", accessor: "merk", checked: false },
-    { label: "Provinsi", accessor: "provinsi", checked: false },
-    { label: "Kabupaten/Kota", accessor: "kota", checked: false },
-  ];
-
-  const filterOptionsPeralatan: FilterOption[] = [
-    { label: "Nama Peralatan", accessor: "nama_peralatan", checked: false },
-    { label: "Satuan", accessor: "satuan", checked: false },
-    { label: "Spesifikasi", accessor: "spesifikasi", checked: false },
-    { label: "Kapasitas", accessor: "kapasitas", checked: false },
-    { label: "Kodefikasi", accessor: "kodefikasi", checked: false },
-    {
-      label: "Kelompok Peralatan",
-      accessor: "kelompok_peralatan",
-      checked: false,
-    },
-    { label: "Jumlah Kebutuhan", accessor: "jumlah_kebutuhan", checked: false },
-    { label: "Merk", accessor: "merk", checked: false },
-    { label: "Provinsi", accessor: "provinsi", checked: false },
-    { label: "Kabupaten/Kota", accessor: "kota", checked: false },
-  ];
-
-  const filterOptionsTenagaKerja: FilterOption[] = [
-    { label: "Nama Pekerja", accessor: "jenis_tenaga_kerja", checked: false },
-    { label: "Satuan", accessor: "satuan", checked: false },
-    { label: "Jumlah Kebutuhan", accessor: "jumlah_kebutuhan", checked: false },
-    { label: "Kodefikasi", accessor: "kodefikasi", checked: false },
-    { label: "Provinsi", accessor: "provinsi", checked: false },
-    { label: "Kabupaten/Kota", accessor: "kota", checked: false },
-  ];
-
   const hydrate = useCallback(async () => {
     if (!informasiUmumId) return;
     const result = await fetchPerencanaanData(informasiUmumId);
-    setInfo(result.informasi_umum);
-    setMaterials(result.material);
-    setTools(result.peralatan);
-    setWorkers(result.tenaga_kerja);
-    setVendors(result.shortlist_vendor);
+    const material = Array.isArray(result.material) ? result.material : [];
+    const peralatan = Array.isArray(result.peralatan) ? result.peralatan : [];
+    const tenagaKerja = Array.isArray((result as any).tenagaKerja)
+      ? (result as any).tenagaKerja
+      : Array.isArray((result as any).tenaga_kerja)
+      ? (result as any).tenaga_kerja
+      : [];
+    const vendors = Array.isArray(result.shortlist_vendor)
+      ? result.shortlist_vendor
+      : [];
+    const info = result.informasi_umum ?? {};
+    setInfo(info);
+    setMaterials(material);
+    setTools(peralatan);
+    setWorkers(tenagaKerja);
+    setVendors(vendors);
   }, [informasiUmumId]);
 
   useEffect(() => {
@@ -142,6 +114,50 @@ export default function Tahap4Section() {
     window.location.href = "/perencanaan_data/perencanaan_data_list";
   };
 
+  const baseOptions = useMemo(
+    () => [
+      { label: "Responden/Vendor", value: "nama_vendor" },
+      { label: "Pemilik Vendor", value: "pemilik_vendor" },
+      { label: "Alamat", value: "alamat" },
+      { label: "Kontak", value: "kontak" },
+    ],
+    []
+  );
+
+  const [sbOptions, setSbOptions] = useState(
+    baseOptions.map((o) => ({ label: o.label, value: o.value, checked: false }))
+  );
+
+  useEffect(() => {
+    setSbOptions((prev) =>
+      prev.map((o) => ({
+        ...o,
+        checked: vendorFilters.includes(String(o.value)),
+      }))
+    );
+  }, [vendorFilters]);
+
+  useEffect(() => {
+    setSbOptions(
+      baseOptions.map((o) => ({
+        label: o.label,
+        value: o.value,
+        checked: vendorFilters.includes(String(o.value)),
+      }))
+    );
+  }, [baseOptions]);
+
+  const applyFiltersToStore = React.useCallback(
+    (opts: { label: string; value?: string | number; checked: boolean }[]) => {
+      setSbOptions(opts as any);
+      const active = opts
+        .filter((f) => f.checked)
+        .map((f) => String(f.value ?? ""));
+      setVendorFilters(active);
+    },
+    [setVendorFilters]
+  );
+
   return (
     <div className="p-8">
       <div className="space-y-8">
@@ -169,15 +185,30 @@ export default function Tahap4Section() {
               materials={materials}
               tools={tools}
               workers={workers}
-              filterOptionsMaterial={filterOptionsMaterial}
-              filterOptionsPeralatan={filterOptionsPeralatan}
-              filterOptionsTenagaKerja={filterOptionsTenagaKerja}
             />
 
-            <h5 className="text-H5">3. Vendor</h5>
-            <VendorTable vendors={vendors} onOpenModal={openVendorModal} />
+            <h5 className="text-H5 flex items-center justify-between">
+              <span>3. Vendor</span>
+              <div className="w-[400px]">
+                <SearchBox
+                  placeholder="Cari Vendor..."
+                  onSearch={setQuery}
+                  withFilter
+                  filterOptions={sbOptions}
+                  onFilterClick={applyFiltersToStore}
+                  onApplyFilters={applyFiltersToStore}
+                />
+              </div>
+            </h5>
 
-            <div className="flex justify-end gap-4 mt-3 bg-neutral-100 px-6 py-8 rounded-[16px]">
+            <VendorTable
+              vendors={vendors}
+              onOpenModal={openVendorModal}
+              query={query}
+              filterKeys={vendorFilters}
+            />
+
+            <div className="flex justify-end gap-4 mt-3 bg-neutral-100 px-6 py-8 rounded-[16px] mb-4">
               <Button
                 variant="outlined_yellow"
                 label="Kembali"

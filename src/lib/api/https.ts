@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "@constants/endpoints";
+import { emitAlert } from "@components/ui/alert-event";
 
 function ensureProtocol(url: string) {
   if (!/^https?:\/\//i.test(url)) return `https://${url}`;
@@ -29,6 +30,43 @@ function setHeader(headers: unknown, key: string, value?: string) {
   const h = headers as any;
   if (h && typeof h.set === "function") h.set(key, value);
   else h[key] = value;
+}
+
+function isOffline() {
+  if (typeof navigator !== "undefined" && "onLine" in navigator) {
+    return navigator.onLine === false;
+  }
+  return false;
+}
+
+function mapFriendlyMessage(axErr: AxiosErrorWithFriendly) {
+  const data = axErr.response?.data as any | undefined;
+  const firstField =
+    data?.errors && typeof data.errors === "object"
+      ? Object.keys(data.errors)[0]
+      : undefined;
+  const firstMsg =
+    firstField && Array.isArray(data?.errors?.[firstField])
+      ? data.errors[firstField][0]
+      : undefined;
+
+  return (
+    firstMsg || data?.message || axErr.message || "Terjadi kesalahan jaringan."
+  );
+}
+
+function mapAutoAlertMessage(axErr: AxiosErrorWithFriendly) {
+  if (isOffline()) return "kendala jaringan";
+
+  if (axErr.code === "ERR_NETWORK" && !axErr.response)
+    return "Kendala terhubung ke API";
+
+  if (axErr.code === "ECONNABORTED") return "Kendala terhubung ke API";
+
+  const s = axErr.response?.status ?? 0;
+  if ([502, 503, 504].includes(s)) return "Kendala terhubung ke API";
+
+  return null;
 }
 
 http.interceptors.request.use((config) => {
@@ -70,20 +108,12 @@ http.interceptors.response.use(
   (err: unknown) => {
     if (axios.isAxiosError(err)) {
       const axErr = err as AxiosErrorWithFriendly<any>;
-      const data = axErr.response?.data as any | undefined;
-      const firstField =
-        data?.errors && typeof data.errors === "object"
-          ? Object.keys(data.errors)[0]
-          : undefined;
-      const firstMsg =
-        firstField && Array.isArray(data?.errors?.[firstField])
-          ? data.errors[firstField][0]
-          : undefined;
-      axErr.friendlyMessage =
-        firstMsg ||
-        data?.message ||
-        axErr.message ||
-        "Terjadi kesalahan jaringan.";
+
+      axErr.friendlyMessage = mapFriendlyMessage(axErr);
+
+      const autoMsg = mapAutoAlertMessage(axErr);
+      if (autoMsg) emitAlert(autoMsg, "error");
+
       return Promise.reject(axErr);
     }
     return Promise.reject(err);

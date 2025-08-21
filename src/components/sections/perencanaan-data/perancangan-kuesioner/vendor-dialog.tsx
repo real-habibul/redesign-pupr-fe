@@ -1,6 +1,4 @@
-// src/components/sections/perencanaan-data/perancangan-kuesioner/vendor-dialog.tsx
 "use client";
-
 import * as React from "react";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
@@ -11,12 +9,11 @@ import {
   IconButton,
 } from "@mui/material";
 import { CloseCircle } from "iconsax-react";
-
 import Tabs from "@components/ui/tabs";
 import SearchBox from "@components/ui/searchbox";
+import type { FilterOption } from "@components/ui/searchbox";
 import Button from "@components/ui/button";
 import DataTableMui, { type ColumnDef } from "@components/ui/table";
-
 import type {
   VendorDetail,
   MaterialItem,
@@ -61,6 +58,39 @@ export default function VendorDialog({
   const [qM, setQM] = useState("");
   const [qP, setQP] = useState("");
   const [qT, setQT] = useState("");
+
+  // ==== STABILKAN FILTER OPTIONS (fix loop) ====
+  const materialFilterOptions = useMemo<FilterOption[]>(
+    () => [
+      { label: "Nama Material", value: "nama_material", checked: false },
+      { label: "Satuan", value: "satuan", checked: false },
+      { label: "Spesifikasi", value: "spesifikasi", checked: false },
+      { label: "Merk", value: "merk", checked: false },
+    ],
+    []
+  );
+
+  const peralatanFilterOptions = useMemo<FilterOption[]>(
+    () => [
+      { label: "Nama Peralatan", value: "nama_peralatan", checked: false },
+      { label: "Satuan", value: "satuan", checked: false },
+      { label: "Spesifikasi", value: "spesifikasi", checked: false },
+      { label: "Merk", value: "merk", checked: false },
+    ],
+    []
+  );
+
+  const tenagaFilterOptions = useMemo<FilterOption[]>(
+    () => [
+      {
+        label: "Jenis Tenaga Kerja",
+        value: "jenis_tenaga_kerja",
+        checked: false,
+      },
+      { label: "Satuan", value: "satuan", checked: false },
+    ],
+    []
+  );
 
   useEffect(() => {
     async function run() {
@@ -224,6 +254,7 @@ export default function VendorDialog({
                     placeholder="Cari Material..."
                     onSearch={setQM}
                     withFilter
+                    filterOptions={materialFilterOptions}
                   />
                   <DataTableMui<MaterialItem>
                     columns={materialCols}
@@ -248,6 +279,7 @@ export default function VendorDialog({
                     placeholder="Cari Peralatan..."
                     onSearch={setQP}
                     withFilter
+                    filterOptions={peralatanFilterOptions}
                   />
                   <DataTableMui<PeralatanItem>
                     columns={peralatanCols}
@@ -272,6 +304,7 @@ export default function VendorDialog({
                     placeholder="Cari Tenaga Kerja..."
                     onSearch={setQT}
                     withFilter
+                    filterOptions={tenagaFilterOptions}
                   />
                   <DataTableMui<TenagaKerjaItem>
                     columns={tenagaCols}

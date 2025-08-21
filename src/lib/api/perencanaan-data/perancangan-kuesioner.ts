@@ -1,4 +1,5 @@
 import { http } from "@lib/api/https";
+import { ENDPOINTS } from "@constants/endpoints";
 import type {
   PerencanaanResult,
   VendorDetail,
@@ -7,7 +8,7 @@ import type {
 
 export async function fetchPerencanaanData(informasiUmumId: string) {
   const { data } = await http.get<{ data: PerencanaanResult }>(
-    `/api/perencanaan-data/perencanaan-data-result`,
+    `/perencanaan-data/perencanaan-data-result`,
     { params: { id: informasiUmumId } }
   );
   return data.data;
@@ -15,7 +16,7 @@ export async function fetchPerencanaanData(informasiUmumId: string) {
 
 export async function fetchVendorDetail(vendorId: ID, informasiUmumId: string) {
   const { data } = await http.get<{ data: VendorDetail }>(
-    `/api/perencanaan-data/shortlist-detail-identifikasi`,
+    `/perencanaan-data/shortlist-detail-identifikasi`,
     { params: { id: vendorId, informasi_umum_id: informasiUmumId } }
   );
   return data.data;
@@ -29,7 +30,7 @@ export async function adjustIdentifikasiKebutuhan(payload: {
   tenaga_kerja: Array<{ id: ID }>;
 }) {
   const { data } = await http.post(
-    `/api/perencanaan-data/adjust-identifikasi-kebutuhan`,
+    `/perencanaan-data/adjust-identifikasi-kebutuhan`,
     payload
   );
   return data;
@@ -37,7 +38,7 @@ export async function adjustIdentifikasiKebutuhan(payload: {
 
 export async function savePerencanaanData(informasiUmumId: string) {
   const { data } = await http.post(
-    `/api/perencanaan-data/save-perencanaan-data/${informasiUmumId}`,
+    `/perencanaan-data/save-perencanaan-data/${informasiUmumId}`,
     {}
   );
   return data;

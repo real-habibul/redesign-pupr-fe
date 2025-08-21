@@ -127,6 +127,16 @@ export default function DataTableMui<T extends object>({
               sx={{
                 backgroundColor: "var(--color-solid-basic-blue-100) !important",
               }}>
+              <TableCell
+                className="px-3 py-6 text-base font-normal text-center w-[64px]"
+                sx={{
+                  borderBottom: "1px solid rgba(0,0,0,0.12)",
+                  color: "var(--color-emphasis-light-on-surface-high)",
+                  backgroundColor: "transparent",
+                  textAlign: "center",
+                }}>
+                No
+              </TableCell>
               {selectable && (
                 <TableCell
                   className={clsx(
@@ -175,7 +185,6 @@ export default function DataTableMui<T extends object>({
 
           <TableBody
             sx={{
-              backgroundColor: "var(--color-surface-light-background)",
               "& .MuiTableCell-root": {
                 color: "var(--color-emphasis-light-on-surface-medium)",
                 backgroundColor: "transparent",
@@ -191,14 +200,20 @@ export default function DataTableMui<T extends object>({
                     verticalAlign: "middle",
                     color: "var(--color-emphasis-light-on-surface-medium)",
                   }}
-                  colSpan={(selectable ? 1 : 0) + columns.length}>
+                  colSpan={(selectable ? 1 : 0) + columns.length + 1}>
                   {emptyMessage}
                 </TableCell>
               </TableRow>
             )}
 
             {sliced.map((row, i) => {
-              const zebra = striped && i % 2 === 1;
+              const displayIndex = start + i + 1;
+              const isEven = displayIndex % 2 === 0;
+              const bgColor = striped
+                ? isEven
+                  ? "var(--color-solid-basic-neutral-100)"
+                  : "var(--color-solid-basic-neutral-0)"
+                : "transparent";
               const checked =
                 selectable && isSelected ? !!isSelected(row) : false;
               return (
@@ -206,12 +221,15 @@ export default function DataTableMui<T extends object>({
                   key={i}
                   hover
                   sx={{
-                    backgroundColor: zebra
-                      ? "var(--color-solid-basic-neutral-0)"
-                      : "transparent",
+                    backgroundColor: bgColor,
                     "&:last-child td, &:last-child th": { border: 0 },
                     borderBottom: "1px solid rgba(0,0,0,0.08)",
                   }}>
+                  <TableCell
+                    className="px-3 py-4 text-center align-middle w-[64px]"
+                    sx={{ textAlign: "center" }}>
+                    {displayIndex}
+                  </TableCell>
                   {selectable && (
                     <TableCell
                       className={clsx(
@@ -234,13 +252,12 @@ export default function DataTableMui<T extends object>({
                       )}
                     </TableCell>
                   )}
-
                   {columns.map((col, cidx) => (
                     <TableCell
                       key={cidx}
                       className={clsx("px-3 py-4 align-middle", col.className)}>
                       {col.cell
-                        ? col.cell(row, start + i)
+                        ? col.cell(row as any, start + i)
                         : String((row as any)[col.key])}
                     </TableCell>
                   ))}
