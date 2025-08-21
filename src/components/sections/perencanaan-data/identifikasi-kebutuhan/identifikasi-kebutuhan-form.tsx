@@ -75,12 +75,19 @@ export default function Identifikasi_Kebutuhan_Form() {
         const data = await getProvincesAndCities();
         const transformed: ProvinceOption[] = (data?.data ?? []).map(
           (d: any) => ({
-            value: d.id_province,
-            label: d.province_name,
-            cities: d.cities ?? [],
+            value: d.id_province ?? d.province_id ?? d.id,
+            label: d.province_name ?? d.name,
+            cities: Array.isArray(d.cities) ? d.cities : [],
           })
         );
         setProvincesOptions(transformed);
+      } catch (e) {
+        console.error("Provinces error:", e);
+        show("Gagal memuat data provinsi/kota.", "error");
+        return;
+      }
+
+      try {
         const params = new URLSearchParams(window.location.search);
         if (params.get("fromTahap3") === "true") {
           const id = localStorage.getItem("identifikasi_kebutuhan_id");
@@ -93,8 +100,9 @@ export default function Identifikasi_Kebutuhan_Form() {
             });
           }
         }
-      } catch {
-        show("Gagal memuat data provinsi/kota.", "error");
+      } catch (e) {
+        console.error("Identifikasi error:", e);
+        show("Gagal memuat data identifikasi kebutuhan.", "error");
       }
     })();
   }, [setProvincesOptions, setInitialValues, show]);
@@ -126,7 +134,7 @@ export default function Identifikasi_Kebutuhan_Form() {
           if (identId)
             localStorage.setItem("identifikasi_kebutuhan_id", String(identId));
           show("Data berhasil disimpan.", "success");
-          router.replace("/perencanaan_data/tahap3");
+          router.replace("/perencanaan-data/shortlist-vendor");
           return;
         }
         show(res?.message ?? "Gagal menyimpan data.", "error");

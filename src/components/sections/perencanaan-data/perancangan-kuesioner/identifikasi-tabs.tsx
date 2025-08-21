@@ -82,6 +82,8 @@ export default function IdentifikasiTabs({
     setTenagaKerjaFilters,
   } = useTahap4FiltersStore();
 
+  const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
+
   const [materialQuery, setMaterialQuery] = useState("");
   const [peralatanQuery, setPeralatanQuery] = useState("");
   const [tenagaQuery, setTenagaQuery] = useState("");
@@ -102,136 +104,148 @@ export default function IdentifikasiTabs({
   useEffect(() => setPagePer(1), [dPerQ, peralatanFilters]);
   useEffect(() => setPageTen(1), [dTenQ, tenagaKerjaFilters]);
 
+  const currentPlaceholder =
+    activeTab === 0
+      ? "Cari Material..."
+      : activeTab === 1
+      ? "Cari Peralatan..."
+      : "Cari Tenaga Kerja...";
+
+  const currentFilters =
+    activeTab === 0
+      ? toSBFilters(filterOptionsMaterial, materialFilters)
+      : activeTab === 1
+      ? toSBFilters(filterOptionsPeralatan, peralatanFilters)
+      : toSBFilters(filterOptionsTenagaKerja, tenagaKerjaFilters);
+
+  const handleSearch = (q: string) => {
+    if (activeTab === 0) setMaterialQuery(q);
+    else if (activeTab === 1) setPeralatanQuery(q);
+    else setTenagaQuery(q);
+  };
+
+  const handleFilterClick = (filters: SearchBoxFilter[]) => {
+    const keys = fromSBFilters(filters);
+    if (activeTab === 0) setMaterialFilters(keys);
+    else if (activeTab === 1) setPeralatanFilters(keys);
+    else setTenagaKerjaFilters(keys);
+  };
+
   return (
-    <Tabs
-      className="w-full"
-      tabs={[
-        {
-          label: "Material",
-          content: (
-            <div className="mt-3 space-y-4">
-              <SearchBox
-                placeholder="Cari Material..."
-                onSearch={setMaterialQuery}
-                withFilter
-                debounceDelay={200}
-                filterOptions={toSBFilters(
-                  filterOptionsMaterial,
-                  materialFilters
-                )}
-                onFilterClick={(filters) =>
-                  setMaterialFilters(fromSBFilters(filters))
-                }
-                className="h-12"
-              />
-              <DataTableMui<MaterialItem>
-                columns={[
-                  { key: "nama_material", header: "Nama Material" },
-                  { key: "satuan", header: "Satuan" },
-                  { key: "spesifikasi", header: "Spesifikasi" },
-                  { key: "ukuran", header: "Ukuran" },
-                  { key: "kodefikasi", header: "Kodefikasi" },
-                  { key: "kelompok_material", header: "Kelompok Material" },
-                  { key: "jumlah_kebutuhan", header: "Jumlah Kebutuhan" },
-                  { key: "merk", header: "Merk" },
-                  { key: "provinsi", header: "Provinsi" },
-                  { key: "kota", header: "Kabupaten/Kota" },
-                ]}
-                data={matData}
-                pagination={{
-                  currentPage: pageMat,
-                  itemsPerPage: ITEMS_PER_PAGE,
-                  total: matData.length,
-                  onPageChange: setPageMat,
-                }}
-                striped
-              />
-            </div>
-          ),
-        },
-        {
-          label: "Peralatan",
-          content: (
-            <div className="mt-3 space-y-4">
-              <SearchBox
-                placeholder="Cari Peralatan..."
-                onSearch={setPeralatanQuery}
-                withFilter
-                debounceDelay={200}
-                filterOptions={toSBFilters(
-                  filterOptionsPeralatan,
-                  peralatanFilters
-                )}
-                onFilterClick={(filters) =>
-                  setPeralatanFilters(fromSBFilters(filters))
-                }
-                className="h-12"
-              />
-              <DataTableMui<PeralatanItem>
-                columns={[
-                  { key: "nama_peralatan", header: "Nama Peralatan" },
-                  { key: "satuan", header: "Satuan" },
-                  { key: "spesifikasi", header: "Spesifikasi" },
-                  { key: "kapasitas", header: "Kapasitas" },
-                  { key: "kodefikasi", header: "Kodefikasi" },
-                  { key: "kelompok_peralatan", header: "Kelompok Peralatan" },
-                  { key: "jumlah_kebutuhan", header: "Jumlah Kebutuhan" },
-                  { key: "merk", header: "Merk" },
-                  { key: "provinsi", header: "Provinsi" },
-                  { key: "kota", header: "Kabupaten/Kota" },
-                ]}
-                data={perData}
-                pagination={{
-                  currentPage: pagePer,
-                  itemsPerPage: ITEMS_PER_PAGE,
-                  total: perData.length,
-                  onPageChange: setPagePer,
-                }}
-                striped
-              />
-            </div>
-          ),
-        },
-        {
-          label: "Tenaga Kerja",
-          content: (
-            <div className="mt-3 space-y-4">
-              <SearchBox
-                placeholder="Cari Tenaga Kerja..."
-                onSearch={setTenagaQuery}
-                withFilter
-                debounceDelay={200}
-                filterOptions={toSBFilters(
-                  filterOptionsTenagaKerja,
-                  tenagaKerjaFilters
-                )}
-                onFilterClick={(filters) =>
-                  setTenagaKerjaFilters(fromSBFilters(filters))
-                }
-                className="h-12"
-              />
-              <DataTableMui<TenagaKerjaItem>
-                columns={[
-                  { key: "jenis_tenaga_kerja", header: "Nama Pekerja" },
-                  { key: "satuan", header: "Satuan" },
-                  { key: "jumlah_kebutuhan", header: "Jumlah Kebutuhan" },
-                  { key: "kodefikasi", header: "Kodefikasi" },
-                  { key: "provinsi", header: "Provinsi" },
-                  { key: "kota", header: "Kabupaten/Kota" },
-                ]}
-                data={tenData}
-                pagination={{
-                  currentPage: pageTen,
-                  itemsPerPage: ITEMS_PER_PAGE,
-                  total: tenData.length,
-                  onPageChange: setPageTen,
-                }}
-                striped
-              />
-            </div>
-          ),
-        },
-      ]}
-    />
+    <div className="w-full">
+      \{" "}
+      <div className="relative">
+        <div className="md:absolute md:right-0 md:top-0 md:z-10 md:flex md:items-center md:gap-3">
+          <SearchBox
+            placeholder={currentPlaceholder}
+            onSearch={handleSearch}
+            withFilter
+            debounceDelay={200}
+            filterOptions={currentFilters}
+            onFilterClick={handleFilterClick}
+            className="h-12 w-full md:w-[320px]"
+          />
+        </div>
+
+        <div className="pt-0 md:pt-0">
+          <Tabs
+            value={activeTab}
+            onChange={(idx) => setActiveTab(idx as 0 | 1 | 2)}
+            className="my-0"
+            tabs={[
+              {
+                label: "Material",
+                content: (
+                  <div className="mt-3 space-y-4">
+                    <DataTableMui<MaterialItem>
+                      columns={[
+                        { key: "nama_material", header: "Nama Material" },
+                        { key: "satuan", header: "Satuan" },
+                        { key: "spesifikasi", header: "Spesifikasi" },
+                        { key: "ukuran", header: "Ukuran" },
+                        { key: "kodefikasi", header: "Kodefikasi" },
+                        {
+                          key: "kelompok_material",
+                          header: "Kelompok Material",
+                        },
+                        { key: "jumlah_kebutuhan", header: "Jumlah Kebutuhan" },
+                        { key: "merk", header: "Merk" },
+                        { key: "provinsi", header: "Provinsi" },
+                        { key: "kota", header: "Kabupaten/Kota" },
+                      ]}
+                      data={matData}
+                      pagination={{
+                        currentPage: pageMat,
+                        itemsPerPage: ITEMS_PER_PAGE,
+                        total: matData.length,
+                        onPageChange: setPageMat,
+                      }}
+                      striped
+                    />
+                  </div>
+                ),
+              },
+              {
+                label: "Peralatan",
+                content: (
+                  <div className="mt-3 space-y-4">
+                    <DataTableMui<PeralatanItem>
+                      columns={[
+                        { key: "nama_peralatan", header: "Nama Peralatan" },
+                        { key: "satuan", header: "Satuan" },
+                        { key: "spesifikasi", header: "Spesifikasi" },
+                        { key: "kapasitas", header: "Kapasitas" },
+                        { key: "kodefikasi", header: "Kodefikasi" },
+                        {
+                          key: "kelompok_peralatan",
+                          header: "Kelompok Peralatan",
+                        },
+                        { key: "jumlah_kebutuhan", header: "Jumlah Kebutuhan" },
+                        { key: "merk", header: "Merk" },
+                        { key: "provinsi", header: "Provinsi" },
+                        { key: "kota", header: "Kabupaten/Kota" },
+                      ]}
+                      data={perData}
+                      pagination={{
+                        currentPage: pagePer,
+                        itemsPerPage: ITEMS_PER_PAGE,
+                        total: perData.length,
+                        onPageChange: setPagePer,
+                      }}
+                      striped
+                    />
+                  </div>
+                ),
+              },
+              {
+                label: "Tenaga Kerja",
+                content: (
+                  <div className="mt-3 space-y-4">
+                    <DataTableMui<TenagaKerjaItem>
+                      columns={[
+                        { key: "jenis_tenaga_kerja", header: "Nama Pekerja" },
+                        { key: "satuan", header: "Satuan" },
+                        { key: "jumlah_kebutuhan", header: "Jumlah Kebutuhan" },
+                        { key: "kodefikasi", header: "Kodefikasi" },
+                        { key: "provinsi", header: "Provinsi" },
+                        { key: "kota", header: "Kabupaten/Kota" },
+                      ]}
+                      data={tenData}
+                      pagination={{
+                        currentPage: pageTen,
+                        itemsPerPage: ITEMS_PER_PAGE,
+                        total: tenData.length,
+                        onPageChange: setPageTen,
+                      }}
+                      striped
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
+      </div>
+    </div>
   );
 }

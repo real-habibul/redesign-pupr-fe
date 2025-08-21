@@ -13,7 +13,7 @@ function isAbsoluteUrl(url?: string) {
   return !!url && /^https?:\/\//i.test(url);
 }
 
-type AxiosErrorWithFriendly<T = any, D = any> = AxiosError<T, D> & {
+export type AxiosErrorWithFriendly<T = any, D = any> = AxiosError<T, D> & {
   friendlyMessage?: string;
 };
 
@@ -34,6 +34,7 @@ function setHeader(headers: unknown, key: string, value?: string) {
 http.interceptors.request.use((config) => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
   config.headers = config.headers ?? {};
   setHeader(config.headers, "Accept", "application/json");
 
@@ -44,7 +45,8 @@ http.interceptors.request.use((config) => {
   const isMultipart =
     typeof FormData !== "undefined" && config.data instanceof FormData;
   const isBlob = typeof Blob !== "undefined" && config.data instanceof Blob;
-  const isArrayBuffer = config.data instanceof ArrayBuffer;
+  const isArrayBuffer =
+    typeof ArrayBuffer !== "undefined" && config.data instanceof ArrayBuffer;
 
   if (
     hasBody &&
@@ -56,6 +58,7 @@ http.interceptors.request.use((config) => {
     setHeader(config.headers, "Content-Type", "application/json");
   }
   if (token) setHeader(config.headers, "Authorization", `Bearer ${token}`);
+
   if (isAbsoluteUrl(config.url)) {
     (config as AxiosRequestConfig).baseURL = "";
   }

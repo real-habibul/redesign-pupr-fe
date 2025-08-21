@@ -1,4 +1,3 @@
-// /lib/api/perencanaan-data/shortlist-vendor.ts
 import { http } from "@lib/api/https";
 import { ENDPOINTS } from "@constants/endpoints";
 import type {

@@ -115,9 +115,8 @@ export default function MaterialForm({
     return m;
   }, [provOptionsFull]);
 
-  // ⛔️ Jangan subscribe ke `byId` di parent.
   const filteredIds = useMemo(() => {
-    const state = useMaterialsStore.getState(); // snapshot, tidak subscribe
+    const state = useMaterialsStore.getState();
     const byId = state.byId;
 
     if (!qLower && !filterKeys?.length) return order;
