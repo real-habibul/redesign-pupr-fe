@@ -65,6 +65,7 @@ export default function MUISelect({
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
   const [focused, setFocused] = React.useState(false);
+
   return (
     <Box sx={{ minWidth, width: fullWidth ? "100%" : undefined }}>
       <FormControl
@@ -106,23 +107,28 @@ export default function MUISelect({
           label={label}
           onChange={handleChange}
           displayEmpty
+          input={
+            <OutlinedInput
+              label={label}
+              sx={{
+                backgroundColor: "#fff",
+                borderRadius: "16px",
+                height: 48,
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "var(--color-surface-light-outline)",
+                },
+                "&:hover .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "var(--color-solid-basic-blue-400)",
+                },
+                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                  borderColor: "var(--color-solid-basic-blue-500)",
+                },
+              }}
+            />
+          }
           sx={{
             ...fieldBaseSx,
             "&, & *": { fontFamily: "Poppins, sans-serif !important" },
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "16px",
-              height: 48,
-              lineHeight: "48px",
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "var(--color-surface-light-outline)",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "var(--color-solid-basic-blue-400)",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "var(--color-solid-basic-blue-500)",
-              },
-            },
             "& .MuiSelect-select": {
               height: 48,
               lineHeight: "48px",
@@ -132,6 +138,8 @@ export default function MUISelect({
               overflow: "hidden",
               textOverflow: "ellipsis",
               color: "var(--color-emphasis-light-on-surface-high)",
+              backgroundColor: "#fff",
+              borderRadius: "16px",
             },
           }}
           MenuProps={{
@@ -151,18 +159,18 @@ export default function MUISelect({
                 overflowY: "auto",
                 width: menuWidthPx,
                 maxWidth: menuWidthPx,
-                "& .MuiMenu-list": { p: 1, pt: 0 },
+                bgcolor: "#fff",
+                "& .MuiMenu-list": { p: 1, pt: 0, bgcolor: "#fff" },
               },
             },
           }}>
-          {/* Search Bar */}
           <ListSubheader
             disableSticky
             sx={{
               position: "sticky",
               top: 0,
               zIndex: 1,
-              bgcolor: "background.paper",
+              bgcolor: "#fff",
               borderBottom: "1px solid #EEE",
               px: 1,
               py: 1,
@@ -179,13 +187,13 @@ export default function MUISelect({
                 "& .MuiOutlinedInput-root": {
                   height: 40,
                   borderRadius: "10px",
+                  bgcolor: "#fff",
                   "& .MuiOutlinedInput-input": { py: 0.75 },
                 },
               }}
             />
           </ListSubheader>
 
-          {/* Placeholder item */}
           <MenuItem
             value=""
             disabled
@@ -200,7 +208,6 @@ export default function MUISelect({
             {placeholder}
           </MenuItem>
 
-          {/* Options */}
           {filtered.length === 0 ? (
             <MenuItem disabled sx={{ mx: 0.5, my: 0.5, height: 40 }}>
               Tidak ada hasil

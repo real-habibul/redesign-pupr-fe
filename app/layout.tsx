@@ -1,20 +1,17 @@
+"use client";
+
 import "./globals.css";
 import { Poppins } from "next/font/google";
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "../src/mui-theme/index";
 import { AlertProvider } from "@components/ui/alert";
 import LayoutShell from "@components/ui/navigation-bar-atom/layout-shell";
-import AlertBridge from "@components/ui/alert-bridge";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-poppins",
 });
-
-export const metadata = {
-  title: "E-Katalog SIPASTI (local)",
-  description: "Your description",
-  icons: { icon: "/images/login/favicon.svg" },
-};
 
 export default function RootLayout({
   children,
@@ -24,10 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${poppins.variable} font-sans antialiased`}>
-        <AlertProvider>
-          <AlertBridge />
-          <LayoutShell>{children}</LayoutShell>
-        </AlertProvider>
+        <ThemeProvider theme={theme}>
+          <AlertProvider>
+            <LayoutShell>{children}</LayoutShell>
+          </AlertProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

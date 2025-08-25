@@ -1,9 +1,9 @@
+// Tabs.tsx
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react";
 import { Box, Tabs as MuiTabs, Tab } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
-
 import AppButton from "@components/ui/button";
 
 type CustomVariant =
@@ -11,14 +11,9 @@ type CustomVariant =
   | "outlined_yellow"
   | "text_red"
   | "text_blue";
-
 type LegacyMuiVariant = "contained" | "outlined" | "text" | undefined;
 
-type TabItem = {
-  label: string;
-  content: React.ReactNode;
-  id?: string;
-};
+type TabItem = { label: string; content: React.ReactNode; id?: string };
 
 type ActionButtonProps = {
   label?: string;
@@ -39,6 +34,7 @@ type TabsProps = {
   className?: string;
   value?: number;
   onChange?: (index: number) => void;
+  tabListSx?: SxProps<Theme>; // <- BARU: styling khusus bar tabs
 };
 
 function a11yProps(index: number, baseId: string) {
@@ -64,9 +60,9 @@ export default function Tabs({
   className,
   value: valueProp,
   onChange,
+  tabListSx, // <- BARU
 }: TabsProps) {
   const baseId = React.useId();
-
   const uncontrolledInitialIndex = Math.max(
     0,
     initialLabel ? tabs.findIndex((t) => t.label === initialLabel) : 0
@@ -95,10 +91,11 @@ export default function Tabs({
           sx={{
             display: "inline-flex",
             alignItems: "center",
-            bgcolor: "var(--color-solid-basic-neutral-100)",
+            bgcolor: "var(--color-solid-basic-neutral-100)", // default lama (abu)
             borderRadius: "16px",
             p: "8px",
             height: "60px",
+            ...tabListSx, // <- MERGE override per-instance
           }}>
           <MuiTabs
             value={value}
@@ -107,10 +104,7 @@ export default function Tabs({
             TabIndicatorProps={{ style: { display: "none" } }}
             variant="scrollable"
             scrollButtons="auto"
-            sx={{
-              minHeight: 0,
-              "& .MuiTabs-flexContainer": { gap: "8px" },
-            }}>
+            sx={{ minHeight: 0, "& .MuiTabs-flexContainer": { gap: "8px" } }}>
             {tabs.map((tab, i) => (
               <Tab
                 key={tab.id ?? tab.label}

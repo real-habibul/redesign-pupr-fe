@@ -59,7 +59,6 @@ export default function SearchBox({
 
   const isFilterOpen = useMemo(() => Boolean(anchorEl), [anchorEl]);
 
-  // debounce
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flushAndCall = useCallback(
     (value: string) => {
@@ -97,11 +96,7 @@ export default function SearchBox({
     updated[index] = { ...updated[index], checked: newChecked };
     setSelectedFilters(updated);
     onFilterClick?.(updated);
-  };
-
-  const applyFilters = () => {
-    onApplyFilters?.(selectedFilters);
-    setAnchorEl(null);
+    onApplyFilters?.(updated);
   };
 
   const allChecked =
@@ -112,6 +107,7 @@ export default function SearchBox({
     const updated = selectedFilters.map((o) => ({ ...o, checked }));
     setSelectedFilters(updated);
     onFilterClick?.(updated);
+    onApplyFilters?.(updated);
   };
 
   return (
@@ -300,26 +296,6 @@ export default function SearchBox({
                   />
                 ))}
               </FormGroup>
-
-              {onApplyFilters && (
-                <Button
-                  onClick={applyFilters}
-                  variant="contained"
-                  fullWidth
-                  sx={{
-                    mt: 2,
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    height: 40,
-                    fontFamily: "var(--font-family-sans)",
-                    backgroundColor: "var(--color-solid-basic-blue-600)",
-                    "&:hover": {
-                      backgroundColor: "var(--color-solid-basic-blue-700)",
-                    },
-                  }}>
-                  Terapkan
-                </Button>
-              )}
             </FormControl>
           </Popover>
         </>

@@ -17,16 +17,19 @@ export const NAV_LINKS: LinkItem[] = [
   // { href: "/pengumpulan-data/informasi-tahap-pengumpulan", label: "Pengumpulan Data", activePath: "/pengumpulan-data", roles: [] },
   // { href: "/pemeriksaan-data/informasi-pemeriksaan-data", label: "Pemeriksaan", activePath: "/pemeriksaan-data", roles: [] },
 
-  // {
-  //   href: "/vendor/inputvendor",
-  //   label: "Responden/Vendor",
-  //   activePath: "/vendor",
-  //   roles: [],
-  //   children: [
-  //     { href: "/vendor/inputvendor", label: "Input Data Responden/Vendor" },
-  //     { href: "/vendor/informasi-responden", label: "Informasi Responden/Vendor" }
-  //   ]
-  // },
+  {
+    href: "/input-vendor",
+    label: "Responden/Vendor",
+    activePath: "/input-vendor",
+    roles: [],
+    children: [
+      { href: "/vendor/inputvendor", label: "Input Data Responden/Vendor" },
+      {
+        href: "/vendor/informasi-responden",
+        label: "Informasi Responden/Vendor",
+      },
+    ],
+  },
 
   // {
   //   href: "/pj-balai/monitoring/monitoring-perencanaan-data",

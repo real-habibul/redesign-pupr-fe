@@ -4,81 +4,104 @@ import * as React from "react";
 import MuiCheckbox, {
   CheckboxProps as MuiCheckboxProps,
 } from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 export interface CheckboxProps extends MuiCheckboxProps {
+  label?: React.ReactNode;
   shape?: "circle" | "rounded-square";
   radius?: number | string;
-
   checkedColorVar?: string;
-
   neutralColorVar?: string;
-
   focusRingVar?: string;
-
   hoverBgVar?: string;
-
-  hoverScale?: number;
-  checkedScale?: number;
 }
 
 export default function Checkbox({
-  shape = "circle",
-  radius = 16,
+  label,
+  shape = "rounded-square",
+  radius = 6,
   checkedColorVar = "--color-solid-basic-blue-500",
   neutralColorVar = "--color-solid-basic-neutral-400",
   focusRingVar = "--color-solid-basic-blue-300",
   hoverBgVar = "--color-solid-basic-blue-50",
-  hoverScale = 1.06,
-  checkedScale = 1.08,
-  sx,
   disableRipple = true,
+  sx,
   ...props
 }: CheckboxProps) {
-  return (
+  const baseBox: React.CSSProperties = {
+    display: "inline-block",
+    width: 20,
+    height: 20,
+    borderRadius: shape === "circle" ? "50%" : radius,
+    border: `2px solid var(${neutralColorVar})`,
+    backgroundColor: "transparent",
+    transition: "all 140ms ease",
+  };
+
+  const icon = <span style={baseBox} />;
+  const checkedIcon = (
+    <span
+      style={{
+        ...baseBox,
+        backgroundColor: `var(${checkedColorVar})`,
+        border: `2px solid var(${checkedColorVar})`,
+        position: "relative",
+      }}>
+      <svg
+        viewBox="0 0 24 24"
+        style={{
+          width: 14,
+          height: 14,
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          fill: "white",
+        }}>
+        <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z" />
+      </svg>
+    </span>
+  );
+
+  const checkbox = (
     <MuiCheckbox
       disableRipple={disableRipple}
+      icon={icon}
+      checkedIcon={checkedIcon}
       sx={{
-        "@keyframes checkbox-pop": {
-          "0%": { transform: "scale(1)" },
-          "60%": { transform: `scale(${checkedScale})` },
-          "100%": { transform: "scale(1)" },
-        },
-
-        "& .MuiSvgIcon-root": {
-          fontSize: 22,
-          borderRadius: shape === "circle" ? "50%" : radius,
-          transition:
-            "transform 140ms ease, color 140ms ease, box-shadow 140ms ease, background-color 140ms ease",
-          color: `var(${neutralColorVar})`,
-          backgroundColor: "transparent",
-        },
-
-        "&:hover .MuiSvgIcon-root": {
-          transform: `scale(${hoverScale})`,
+        padding: 2,
+        "&:hover": {
           backgroundColor: `var(${hoverBgVar})`,
+          borderRadius: shape === "circle" ? "50%" : radius,
         },
-
-        "&.Mui-checked .MuiSvgIcon-root, &.MuiCheckbox-indeterminate .MuiSvgIcon-root":
-          {
-            color: `var(${checkedColorVar})`,
-            animation: "checkbox-pop 150ms ease-out",
-            boxShadow: `0 0 0 6px color-mix(in oklab, var(${hoverBgVar}) 70%, transparent)`,
-          },
-
         "&:focus-visible": {
           outline: `2px solid var(${focusRingVar})`,
           outlineOffset: 2,
           borderRadius: shape === "circle" ? "50%" : radius,
         },
-
-        "&.Mui-checked:hover .MuiSvgIcon-root, &.MuiCheckbox-indeterminate:hover .MuiSvgIcon-root":
-          {
-            backgroundColor: `var(${hoverBgVar})`,
-          },
-
         ...sx,
       }}
       {...props}
     />
   );
+
+  if (label) {
+    return (
+      <FormControlLabel
+        control={checkbox}
+        label={label}
+        sx={{
+          margin: 0,
+          gap: "8px",
+          ".MuiFormControlLabel-label": {
+            fontSize: "var(--font-b2-size)",
+            fontWeight: "var(--font-b2-weight, 400)",
+            color: "var(--color-emphasis-light-on-surface-medium)",
+          },
+        }}
+      />
+    );
+  }
+
+  return checkbox;
 }

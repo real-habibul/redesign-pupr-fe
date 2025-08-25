@@ -1,4 +1,9 @@
-import axios, { AxiosError, AxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  InternalAxiosRequestConfig,
+  AxiosRequestHeaders,
+} from "axios";
 import { API_BASE_URL } from "@constants/endpoints";
 import { emitAlert } from "@components/ui/alert-event";
 
@@ -25,11 +30,14 @@ export const http = axios.create({
   validateStatus: (s) => s >= 200 && s < 300,
 });
 
-function setHeader(headers: unknown, key: string, value?: string) {
+function setHeader(
+  headers: AxiosRequestHeaders | AxiosHeaders,
+  key: string,
+  value?: string
+) {
   if (!value) return;
-  const h = headers as any;
-  if (h && typeof h.set === "function") h.set(key, value);
-  else h[key] = value;
+  if (headers instanceof AxiosHeaders) headers.set(key, value);
+  else (headers as any)[key] = value;
 }
 
 function isOffline() {
@@ -49,7 +57,6 @@ function mapFriendlyMessage(axErr: AxiosErrorWithFriendly) {
     firstField && Array.isArray(data?.errors?.[firstField])
       ? data.errors[firstField][0]
       : undefined;
-
   return (
     firstMsg || data?.message || axErr.message || "Terjadi kesalahan jaringan."
   );
@@ -57,29 +64,36 @@ function mapFriendlyMessage(axErr: AxiosErrorWithFriendly) {
 
 function mapAutoAlertMessage(axErr: AxiosErrorWithFriendly) {
   if (isOffline()) return "kendala jaringan";
-
   if (axErr.code === "ERR_NETWORK" && !axErr.response)
     return "Kendala terhubung ke API";
-
   if (axErr.code === "ECONNABORTED") return "Kendala terhubung ke API";
-
   const s = axErr.response?.status ?? 0;
   if ([502, 503, 504].includes(s)) return "Kendala terhubung ke API";
-
   return null;
 }
 
-http.interceptors.request.use((config) => {
+function toPlainParams(p?: InternalAxiosRequestConfig["params"]) {
+  if (!p) return undefined;
+  if (p instanceof URLSearchParams) return Object.fromEntries(p.entries());
+  if (typeof p === "object") return { ...(p as any) };
+  return p as any;
+}
+
+http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-  config.headers = config.headers ?? {};
-  setHeader(config.headers, "Accept", "application/json");
+  const headers =
+    config.headers instanceof AxiosHeaders
+      ? config.headers
+      : new AxiosHeaders(config.headers || {});
+  setHeader(headers, "Accept", "application/json");
 
   const hasBody = !!config.data;
   const contentTypeAlreadySet =
-    (config.headers as any)["Content-Type"] ||
-    (config.headers as any)["content-type"];
+    headers.get?.("Content-Type") ||
+    (headers as any)["Content-Type"] ||
+    (headers as any)["content-type"];
   const isMultipart =
     typeof FormData !== "undefined" && config.data instanceof FormData;
   const isBlob = typeof Blob !== "undefined" && config.data instanceof Blob;
@@ -93,14 +107,21 @@ http.interceptors.request.use((config) => {
     !isBlob &&
     !isArrayBuffer
   ) {
-    setHeader(config.headers, "Content-Type", "application/json");
+    setHeader(headers, "Content-Type", "application/json");
   }
-  if (token) setHeader(config.headers, "Authorization", `Bearer ${token}`);
+  if (token) setHeader(headers, "Authorization", `Bearer ${token}`);
 
-  if (isAbsoluteUrl(config.url)) {
-    (config as AxiosRequestConfig).baseURL = "";
-  }
-  return config;
+  const plainParams = toPlainParams(config.params);
+  const overrideBaseURL = isAbsoluteUrl(config.url) ? "" : config.baseURL;
+
+  const next: InternalAxiosRequestConfig = {
+    ...config,
+    headers,
+    params: plainParams,
+    baseURL: overrideBaseURL,
+  } as InternalAxiosRequestConfig;
+
+  return next;
 });
 
 http.interceptors.response.use(
@@ -108,14 +129,13 @@ http.interceptors.response.use(
   (err: unknown) => {
     if (axios.isAxiosError(err)) {
       const axErr = err as AxiosErrorWithFriendly<any>;
-
       axErr.friendlyMessage = mapFriendlyMessage(axErr);
-
       const autoMsg = mapAutoAlertMessage(axErr);
       if (autoMsg) emitAlert(autoMsg, "error");
-
       return Promise.reject(axErr);
     }
     return Promise.reject(err);
   }
 );
+
+export const api = http;
