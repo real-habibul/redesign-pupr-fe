@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, startTransition } from "react";
+import { useEffect, useRef, useCallback, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAlert } from "@components/ui/alert";
 import {
@@ -32,42 +32,45 @@ export function useInformasiUmum() {
     submitManual: submitManualFromStore,
   } = useInformasiUmumStore();
 
-  const fetchBalaiOptions = async () => {
+  const fetchBalaiOptions = useCallback(async () => {
     try {
       const list = await getBalaiKerja();
-      const options = list.map((b) => ({
+      const options: Option[] = list.map((b) => ({
         value: b.id,
         label: b.nama,
-      })) as Option[];
+      }));
       if (aliveRef.current) setBalaiOptions(options);
     } catch (err) {
       console.error("fetchBalaiOptions error:", err);
       show("Gagal memuat daftar balai.", "error");
     }
-  };
+  }, [setBalaiOptions, show]);
 
-  const fetchInformasiUmum = async (id: string) => {
-    try {
-      const d = await getInformasiUmum(id);
-      if (!d) return;
-      if (balaiOptions.length === 0) await fetchBalaiOptions();
-      const targetId = toNum(d.nama_balai);
-      const selected =
-        balaiOptions.find((opt) => toNum(opt.value) === targetId) ?? null;
-      if (aliveRef.current) {
-        setInitialValueManual({
-          kodeRup: d.kode_rup ?? "",
-          namaPaket: d.nama_paket ?? "",
-          namaPpk: d.nama_ppk ?? "",
-          jabatanPpk: d.jabatan_ppk ?? "",
-          namaBalai: (selected as Option | null) ?? null,
-        });
+  const fetchInformasiUmum = useCallback(
+    async (id: string) => {
+      try {
+        const d = await getInformasiUmum(id);
+        if (!d) return;
+        if (balaiOptions.length === 0) await fetchBalaiOptions();
+        const targetId = toNum(d.nama_balai);
+        const selected =
+          balaiOptions.find((opt) => toNum(opt.value) === targetId) ?? null;
+        if (aliveRef.current) {
+          setInitialValueManual({
+            kodeRup: d.kode_rup ?? "",
+            namaPaket: d.nama_paket ?? "",
+            namaPpk: d.nama_ppk ?? "",
+            jabatanPpk: d.jabatan_ppk ?? "",
+            namaBalai: (selected as Option | null) ?? null,
+          });
+        }
+      } catch (err) {
+        console.error("fetchInformasiUmum error:", err);
+        show("Gagal memuat data Informasi Umum.", "error");
       }
-    } catch (err) {
-      console.error("fetchInformasiUmum error:", err);
-      show("Gagal memuat data Informasi Umum.", "error");
-    }
-  };
+    },
+    [balaiOptions, fetchBalaiOptions, setInitialValueManual, show]
+  );
 
   const hardRedirect = (href: string) => {
     if (typeof window !== "undefined") window.location.assign(href);
@@ -75,37 +78,37 @@ export function useInformasiUmum() {
 
   const targetPath = "/perencanaan-data/identifikasi-kebutuhan";
 
-  const submitManual = async (
-    values: ManualFormValues,
-    opts: SubmitOpts = { redirect: true }
-  ) => {
-    try {
-      const ok = await submitManualFromStore(values);
-      if (ok) {
-        show("Data berhasil disimpan.", "success");
-        if (opts.redirect) {
-          startTransition(() => {
-            router.push(targetPath);
-          });
-          setTimeout(() => {
-            if (
-              typeof window !== "undefined" &&
-              !window.location.pathname.endsWith(targetPath)
-            ) {
-              hardRedirect(targetPath);
-            }
-          }, 150);
+  const submitManual = useCallback(
+    async (values: ManualFormValues, opts: SubmitOpts = { redirect: true }) => {
+      try {
+        const ok = await submitManualFromStore(values);
+        if (ok) {
+          show("Data berhasil disimpan.", "success");
+          if (opts.redirect) {
+            startTransition(() => {
+              router.push(targetPath);
+            });
+            setTimeout(() => {
+              if (
+                typeof window !== "undefined" &&
+                !window.location.pathname.endsWith(targetPath)
+              ) {
+                hardRedirect(targetPath);
+              }
+            }, 150);
+          }
+        } else {
+          show("Gagal mengirim data ke API.", "error");
         }
-      } else {
-        show("Gagal mengirim data ke API.", "error");
+        return ok;
+      } catch (err) {
+        console.error("submitManual error:", err);
+        show("Terjadi kesalahan koneksi.", "error");
+        return false;
       }
-      return ok;
-    } catch (err) {
-      console.error("submitManual error:", err);
-      show("Terjadi kesalahan koneksi.", "error");
-      return false;
-    }
-  };
+    },
+    [router, show, submitManualFromStore]
+  );
 
   useEffect(() => {
     aliveRef.current = true;
@@ -113,7 +116,7 @@ export function useInformasiUmum() {
     return () => {
       aliveRef.current = false;
     };
-  }, []);
+  }, [fetchBalaiOptions]);
 
   return {
     balaiOptions,

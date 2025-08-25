@@ -10,7 +10,7 @@ import React, {
 import { Formik, Form } from "formik";
 import { useRouter } from "next/navigation";
 import Tabs from "@components/ui/tabs";
-import SearchBox from "@components/ui/searchbox";
+import SearchBox, { type FilterOption } from "@components/ui/searchbox";
 import useIdentifikasiKebutuhanStore from "@store/perencanaan-data/identifikasi-kebutuhan/store";
 import {
   getProvincesAndCities,
@@ -24,7 +24,17 @@ import {
   EMPTY_PERALATAN,
   EMPTY_TENAGA_KERJA,
 } from "@constants/perencanaan-data/identifikasi-kebutuhan";
-import type { ProvinceOption } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
+import type {
+  ProvinceOption,
+  City,
+  Material,
+  Peralatan,
+  TenagaKerja,
+  IdentifikasiKebutuhanFormValues,
+  ProvincesApiResponse,
+  IdentifikasiKebutuhanApi,
+  StoreIdentifikasiResponse,
+} from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import Stepper from "@components/ui/stepper";
 import Button from "@components/ui/button";
 import { useAlert } from "@components/ui/alert";
@@ -33,17 +43,72 @@ import PeralatanForm from "./peralatan-form";
 import TenagaKerjaForm from "./tenaga-kerja-form";
 import AddRowModal from "@components/sections/perencanaan-data/identifikasi-kebutuhan/add-row-modal";
 
-type Identifikasi_kebutuhan_Form_Values = {
-  materials: any[];
-  peralatans: any[];
-  tenagaKerjas: any[];
-};
+function s(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v == null) return "";
+  return String(v);
+}
+function idVal(v: unknown): number | string | "" {
+  if (typeof v === "number" || typeof v === "string") return v;
+  if (v == null) return "";
+  const num = Number(v);
+  return Number.isFinite(num) ? num : String(v);
+}
 
-type FilterOption = {
-  label?: string;
-  value: string | number | undefined;
-  checked?: boolean;
-};
+function sanitizeMaterial(
+  input: Partial<Material> | Record<string, unknown>
+): Material {
+  const r = input as Record<string, unknown>;
+  return {
+    nama_material: s(r.nama_material),
+    satuan: s(r.satuan),
+    spesifikasi: s(r.spesifikasi),
+    ukuran: s(r.ukuran),
+    kodefikasi: s(r.kodefikasi),
+    kelompok_material: s(r.kelompok_material),
+    jumlah_kebutuhan: s(r.jumlah_kebutuhan),
+    merk: s(r.merk),
+    provincies_id: idVal(r.provincies_id),
+    cities_id: idVal(r.cities_id),
+  };
+}
+function sanitizePeralatan(
+  input: Partial<Peralatan> | Record<string, unknown>
+): Peralatan {
+  const r = input as Record<string, unknown>;
+  return {
+    nama_peralatan: s(r.nama_peralatan),
+    satuan: s(r.satuan),
+    spesifikasi: s(r.spesifikasi),
+    kapasitas: s(r.kapasitas),
+    kodefikasi: s(r.kodefikasi),
+    kelompok_peralatan: s(r.kelompok_peralatan),
+    jumlah_kebutuhan: s(r.jumlah_kebutuhan),
+    merk: s(r.merk),
+    provincies_id: idVal(r.provincies_id),
+    cities_id: idVal(r.cities_id),
+  };
+}
+function sanitizeTenaga(
+  input: Partial<TenagaKerja> | Record<string, unknown>
+): TenagaKerja {
+  const r = input as Record<string, unknown>;
+  return {
+    jenis_tenaga_kerja: s(r.jenis_tenaga_kerja),
+    satuan: s(r.satuan),
+    jumlah_kebutuhan: s(r.jumlah_kebutuhan),
+    kodefikasi: s(r.kodefikasi),
+    provincies_id: idVal(r.provincies_id),
+    cities_id: idVal(r.cities_id),
+  };
+}
+
+const buildEmptyMaterial = (): Material =>
+  sanitizeMaterial(EMPTY_MATERIAL as Partial<Material>);
+const buildEmptyPeralatan = (): Peralatan =>
+  sanitizePeralatan(EMPTY_PERALATAN as Partial<Peralatan>);
+const buildEmptyTenaga = (): TenagaKerja =>
+  sanitizeTenaga(EMPTY_TENAGA_KERJA as Partial<TenagaKerja>);
 
 export default function Identifikasi_Kebutuhan_Form() {
   const router = useRouter();
@@ -58,9 +123,9 @@ export default function Identifikasi_Kebutuhan_Form() {
   } = useIdentifikasiKebutuhanStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const [materialQuery, setMaterialQuery] = useState("");
-  const [peralatanQuery, setPeralatanQuery] = useState("");
-  const [tenagaQuery, setTenagaQuery] = useState("");
+  const [materialQuery, setMaterialQuery] = useState<string>("");
+  const [peralatanQuery, setPeralatanQuery] = useState<string>("");
+  const [tenagaQuery, setTenagaQuery] = useState<string>("");
   const [materialFilters, setMaterialFilters] = useState<string[]>([]);
   const [peralatanFilters, setPeralatanFilters] = useState<string[]>([]);
   const [tenagaFilters, setTenagaFilters] = useState<string[]>([]);
@@ -72,14 +137,20 @@ export default function Identifikasi_Kebutuhan_Form() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await getProvincesAndCities();
-        const transformed: ProvinceOption[] = (data?.data ?? []).map(
-          (d: any) => ({
-            value: d.id_province ?? d.province_id ?? d.id,
-            label: d.province_name ?? d.name,
-            cities: Array.isArray(d.cities) ? d.cities : [],
-          })
-        );
+        const data = (await getProvincesAndCities()) as ProvincesApiResponse;
+        const arr = Array.isArray(data?.data) ? data.data : [];
+        const transformed: ProvinceOption[] = arr.map((d) => {
+          const rawCities = Array.isArray(d.cities) ? d.cities : [];
+          const cities: City[] = rawCities.map((c: Partial<City>) => ({
+            cities_id: idVal(c?.cities_id),
+            cities_name: s(c?.cities_name),
+          }));
+          return {
+            value: idVal(d.id_province),
+            label: s(d.province_name),
+            cities,
+          };
+        });
         setProvincesOptions(transformed);
       } catch (e) {
         console.error("Provinces error:", e);
@@ -92,12 +163,28 @@ export default function Identifikasi_Kebutuhan_Form() {
         if (params.get("fromTahap3") === "true") {
           const id = localStorage.getItem("identifikasi_kebutuhan_id");
           if (id) {
-            const res = await getIdentifikasiKebutuhan(id);
-            setInitialValues({
-              materials: res?.data?.material ?? [],
-              peralatans: res?.data?.peralatan ?? [],
-              tenagaKerjas: res?.data?.tenaga_kerja ?? [],
-            });
+            const res = (await getIdentifikasiKebutuhan(
+              id
+            )) as IdentifikasiKebutuhanApi;
+            const mRaw = Array.isArray(res?.data?.material)
+              ? res.data.material
+              : [];
+            const pRaw = Array.isArray(res?.data?.peralatan)
+              ? res.data.peralatan
+              : [];
+            const tRaw = Array.isArray(res?.data?.tenaga_kerja)
+              ? res.data.tenaga_kerja
+              : [];
+
+            const materials: Material[] = mRaw.map((m) => sanitizeMaterial(m));
+            const peralatans: Peralatan[] = pRaw.map((p) =>
+              sanitizePeralatan(p)
+            );
+            const tenagaKerjas: TenagaKerja[] = tRaw.map((t) =>
+              sanitizeTenaga(t)
+            );
+
+            setInitialValues({ materials, peralatans, tenagaKerjas });
           }
         }
       } catch (e) {
@@ -114,7 +201,7 @@ export default function Identifikasi_Kebutuhan_Form() {
   };
 
   const handleSubmit = useCallback(
-    async (values: Identifikasi_kebutuhan_Form_Values) => {
+    async (values: IdentifikasiKebutuhanFormValues) => {
       const informasiUmumId = localStorage.getItem("informasi_umum_id");
       const { materials, peralatans, tenagaKerjas } = values;
       if (!materials.length && !peralatans.length && !tenagaKerjas.length) {
@@ -122,12 +209,13 @@ export default function Identifikasi_Kebutuhan_Form() {
         return;
       }
       try {
-        const res = await storeIdentifikasiKebutuhan({
+        const res = (await storeIdentifikasiKebutuhan({
           material: materials,
           peralatan: peralatans,
           tenaga_kerja: tenagaKerjas,
           informasi_umum_id: informasiUmumId,
-        });
+        })) as StoreIdentifikasiResponse;
+
         if (res?.status === "success") {
           const identId =
             res?.data?.material?.[0]?.identifikasi_kebutuhan_id ?? 0;
@@ -170,7 +258,7 @@ export default function Identifikasi_Kebutuhan_Form() {
     [selectedValue]
   );
 
-  const filterOptionsByTab = useMemo(() => {
+  const filterOptionsByTab: FilterOption[] = useMemo(() => {
     if (selectedValue === 0)
       return [
         { label: "Nama Material", value: "nama_material", checked: false },
@@ -227,14 +315,14 @@ export default function Identifikasi_Kebutuhan_Form() {
     ];
   }, [selectedValue]);
 
-  const currentQuery =
+  const currentQuery: string =
     selectedValue === 0
       ? debouncedMatQ
       : selectedValue === 1
       ? debouncedPerQ
       : debouncedTenQ;
 
-  const currentFilterKeys =
+  const currentFilterKeys: string[] =
     selectedValue === 0
       ? materialFilters
       : selectedValue === 1
@@ -260,8 +348,8 @@ export default function Identifikasi_Kebutuhan_Form() {
       </div>
 
       <div className="space-y-4">
-        <Formik<Identifikasi_kebutuhan_Form_Values>
-          initialValues={initialValues}
+        <Formik<IdentifikasiKebutuhanFormValues>
+          initialValues={initialValues as IdentifikasiKebutuhanFormValues}
           onSubmit={handleSubmit}
           enableReinitialize>
           {({ values, setFieldValue }) => (
@@ -278,8 +366,8 @@ export default function Identifikasi_Kebutuhan_Form() {
                     }
                     onSearch={onSearch}
                     withFilter
-                    filterOptions={filterOptionsByTab as any}
-                    onFilterClick={onFilterClick as any}
+                    filterOptions={filterOptionsByTab}
+                    onFilterClick={onFilterClick}
                     className="h-12"
                   />
                   <Button
@@ -369,25 +457,28 @@ export default function Identifikasi_Kebutuhan_Form() {
                   handleAddRow={(rowsToAdd: number) => {
                     if (rowsToAdd <= 0) return;
                     if (selectedValue === 0) {
-                      const next = Array.from({ length: rowsToAdd }, () => ({
-                        ...EMPTY_MATERIAL,
-                      }));
+                      const next: Material[] = Array.from(
+                        { length: rowsToAdd },
+                        buildEmptyMaterial
+                      );
                       setFieldValue("materials", [
                         ...(values.materials ?? []),
                         ...next,
                       ]);
                     } else if (selectedValue === 1) {
-                      const next = Array.from({ length: rowsToAdd }, () => ({
-                        ...EMPTY_PERALATAN,
-                      }));
+                      const next: Peralatan[] = Array.from(
+                        { length: rowsToAdd },
+                        buildEmptyPeralatan
+                      );
                       setFieldValue("peralatans", [
                         ...(values.peralatans ?? []),
                         ...next,
                       ]);
                     } else {
-                      const next = Array.from({ length: rowsToAdd }, () => ({
-                        ...EMPTY_TENAGA_KERJA,
-                      }));
+                      const next: TenagaKerja[] = Array.from(
+                        { length: rowsToAdd },
+                        buildEmptyTenaga
+                      );
                       setFieldValue("tenagaKerjas", [
                         ...(values.tenagaKerjas ?? []),
                         ...next,

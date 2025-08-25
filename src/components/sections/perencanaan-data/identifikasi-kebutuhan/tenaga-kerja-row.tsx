@@ -36,9 +36,15 @@ function Row({
   const provincies_id = useTenagaField(id, "provincies_id");
   const cities_id = useTenagaField(id, "cities_id");
 
+  // ✅ hilangkan `any`: normalisasi tipe provinsi ke union aman
+  const normalizedProvId: string | number | "" =
+    typeof provincies_id === "string" || typeof provincies_id === "number"
+      ? provincies_id
+      : "";
+
   const cityOptions = React.useMemo(
-    () => getCityOptions((provincies_id as any) ?? ""),
-    [getCityOptions, provincies_id]
+    () => getCityOptions(normalizedProvId),
+    [getCityOptions, normalizedProvId]
   );
 
   return (

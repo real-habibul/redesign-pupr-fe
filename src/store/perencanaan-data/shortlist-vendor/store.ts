@@ -2,10 +2,7 @@
 
 import { create } from "zustand";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
-import type {
-  InitialValuesState,
-  VendorItem,
-} from "../../../types/perencanaan-data/shortlist-vendor";
+import type { InitialValuesState } from "../../../types/perencanaan-data/shortlist-vendor";
 
 export type Sev = "success" | "error" | "info" | "warning";
 
@@ -92,11 +89,7 @@ const useTahap3Store = create<Tahap3State>()(
             "tahap3/fetchStatusProgres:start"
           );
           try {
-            // contoh kalau nanti ada helper:
-            // const res = await getStatusProgres();
-            // set({ statusProgres: res }, false, "tahap3/fetchStatusProgres:success");
-          } catch (e) {
-            // optional: set alert error
+          } catch {
           } finally {
             set(
               { isLoadingStatus: false },

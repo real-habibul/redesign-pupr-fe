@@ -45,6 +45,18 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
   ) {
     const [rows, setRows] = React.useState<Row[]>([]);
 
+    // emit dibuat stable
+    const emit = React.useCallback(
+      (next: Row[]) => {
+        const nonEmpty = next.filter((r) => r.sumber.trim().length > 0);
+        onRowsChange?.(
+          nonEmpty.map(({ sumber, spesifikasi }) => ({ sumber, spesifikasi }))
+        );
+        onCSVChange?.(toCSV(nonEmpty));
+      },
+      [onRowsChange, onCSVChange]
+    );
+
     React.useEffect(() => {
       const base: Row[] =
         initialItems && initialItems.length > 0
@@ -63,35 +75,37 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
       );
     }, [initialCSV, initialItems]);
 
-    const emit = (next: Row[]) => {
-      const nonEmpty = next.filter((r) => r.sumber.trim().length > 0);
-      onRowsChange?.(
-        nonEmpty.map(({ sumber, spesifikasi }) => ({ sumber, spesifikasi }))
-      );
-      onCSVChange?.(toCSV(nonEmpty));
-    };
+    const addRow = React.useCallback(() => {
+      setRows((prev) => {
+        const next = [...prev, { id: Date.now(), sumber: "", spesifikasi: "" }];
+        emit(next);
+        return next;
+      });
+    }, [emit]);
 
-    const addRow = () => {
-      const next = [...rows, { id: Date.now(), sumber: "", spesifikasi: "" }];
-      setRows(next);
-    };
-
-    const removeRow = (id: number) => {
-      const next = rows.filter((r) => r.id !== id);
-      setRows(next);
-      emit(next);
-    };
+    const removeRow = React.useCallback(
+      (id: number) => {
+        setRows((prev) => {
+          const next = prev.filter((r) => r.id !== id);
+          emit(next);
+          return next;
+        });
+      },
+      [emit]
+    );
 
     const updateRow = React.useCallback(
       (id: number, patch: Partial<Row>) => {
-        const next = rows.map((r) => (r.id === id ? { ...r, ...patch } : r));
-        setRows(next);
-        emit(next);
+        setRows((prev) => {
+          const next = prev.map((r) => (r.id === id ? { ...r, ...patch } : r));
+          emit(next);
+          return next;
+        });
       },
-      [rows]
+      [emit]
     );
 
-    React.useImperativeHandle(ref, () => ({ addRow }));
+    React.useImperativeHandle(ref, () => ({ addRow }), [addRow]);
 
     const columns = React.useMemo<ColumnDef<Row>[]>(() => {
       return [
@@ -142,7 +156,7 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
           ),
         },
       ];
-    }, [updateRow]);
+    }, [updateRow, removeRow]);
 
     const filtered = React.useMemo(() => {
       const q = (externalQuery ?? "").trim().toLowerCase();

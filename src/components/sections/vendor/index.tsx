@@ -15,8 +15,30 @@ import SumberDayaTable, {
 import Tabs from "@components/ui/tabs";
 import SearchBox, { type FilterOption } from "@components/ui/searchbox";
 
-type Props = { onNext?: () => void; onBack?: () => void; onClose?: () => void };
+type UiOption = { value: string; label: string };
+type RowSD = { sumber: string; spesifikasi: string };
 type FileState = "default" | "processing" | "done";
+
+function toUiOptions(list: unknown): UiOption[] {
+  if (!Array.isArray(list)) return [];
+  return list.map((o) => {
+    const r = o as Record<string, unknown>;
+    const v = r?.value;
+    const l = r?.label;
+    return {
+      value: String(v ?? ""),
+      label: typeof l === "string" ? l : String(l ?? ""),
+    };
+  });
+}
+function findUiOption(
+  opts: readonly UiOption[],
+  val: string
+): UiOption | undefined {
+  return opts.find((o) => o.value === String(val));
+}
+
+type Props = { onNext?: () => void; onBack?: () => void; onClose?: () => void };
 
 const defaultCenter = { lat: -6.236307766247564, lng: 106.80058533427567 };
 
@@ -49,20 +71,12 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
   const [dokState, setDokState] = React.useState<FileState>("default");
   const [dokFile, setDokFile] = React.useState<File | null>(null);
 
-  const [sumberDetail, setSumberDetail] = React.useState<
-    Array<{ sumber: string; spesifikasi: string }>
-  >([]);
-  const [sumberMaterial, setSumberMaterial] = React.useState<
-    Array<{ sumber: string; spesifikasi: string }>
-  >([]);
-  const [sumberPeralatan, setSumberPeralatan] = React.useState<
-    Array<{ sumber: string; spesifikasi: string }>
-  >([]);
-  const [sumberTenaga, setSumberTenaga] = React.useState<
-    Array<{ sumber: string; spesifikasi: string }>
-  >([]);
+  const [sumberDetail, setSumberDetail] = React.useState<RowSD[]>([]);
+  const [sumberMaterial, setSumberMaterial] = React.useState<RowSD[]>([]);
+  const [sumberPeralatan, setSumberPeralatan] = React.useState<RowSD[]>([]);
+  const [sumberTenaga, setSumberTenaga] = React.useState<RowSD[]>([]);
 
-  const [activeTab, setActiveTab] = React.useState(0);
+  const [activeTab, setActiveTab] = React.useState<0 | 1 | 2>(0);
 
   const initialFilters: FilterOption[] = React.useMemo(
     () => [
@@ -87,15 +101,14 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     set_koordinat(`${marker.lat}, ${marker.lng}`);
   }, [marker, set_koordinat]);
 
-  const kategoriValue = (payload.kategori_vendor_id ?? []).join(",");
+  const kategoriValue = React.useMemo(() => {
+    const arr = payload.kategori_vendor_id;
+    return Array.isArray(arr) ? arr.map(String).join(",") : "";
+  }, [payload.kategori_vendor_id]);
 
   const mergeAndEmit = React.useCallback(
-    (
-      m: Array<{ sumber: string; spesifikasi: string }>,
-      p: Array<{ sumber: string; spesifikasi: string }>,
-      t: Array<{ sumber: string; spesifikasi: string }>
-    ) => {
-      const merged = [...m, ...p, ...t].filter((r) => r.sumber?.trim());
+    (m: RowSD[], p: RowSD[], t: RowSD[]) => {
+      const merged = [...m, ...p, ...t].filter((r) => (r.sumber ?? "").trim());
       setSumberDetail(merged);
       set_sumber_daya(merged.map((r) => r.sumber.trim()).join(","));
     },
@@ -106,29 +119,54 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     mergeAndEmit(sumberMaterial, sumberPeralatan, sumberTenaga);
   }, [sumberMaterial, sumberPeralatan, sumberTenaga, mergeAndEmit]);
 
+  const provOpts = React.useMemo(
+    () => toUiOptions(provinsiOptions),
+    [provinsiOptions]
+  );
+  const kotaOpts = React.useMemo(() => toUiOptions(kotaOptions), [kotaOptions]);
+  const kategoriOpts = React.useMemo(
+    () => toUiOptions(kategoriOptions),
+    [kategoriOptions]
+  );
+
   const onSave = async () => {
     try {
       if (logoFile) setLogoState("processing");
       if (dokFile) setDokState("processing");
 
+      const { logo_url, dok_pendukung_url, ...rest } = payload as Record<
+        string,
+        unknown
+      >;
+      const cleanPayload = {
+        ...rest,
+        jenis_vendor: selectedTypes,
+        sumber_daya_detail: JSON.stringify(sumberDetail),
+      };
+
       const res = await saveVendor(
-        {
-          ...payload,
-          jenis_vendor: selectedTypes,
-          sumber_daya_detail: JSON.stringify(sumberDetail),
-        },
+        cleanPayload as Parameters<typeof saveVendor>[0],
         { logo: logoFile, dokumen: dokFile }
       );
 
       setLogoState(logoFile ? "done" : "default");
       setDokState(dokFile ? "done" : "default");
 
-      show(res?.message || "Input vendor berhasil!", "success");
+      show(
+        (res as { message?: string })?.message || "Input vendor berhasil!",
+        "success"
+      );
       onNext?.();
-    } catch (e: any) {
+    } catch (e: unknown) {
       setLogoState("default");
       setDokState("default");
-      show(e?.friendlyMessage || e?.message || "Data gagal disimpan.", "error");
+      const msg =
+        (typeof e === "object" && e && "friendlyMessage" in e
+          ? (e as { friendlyMessage?: string }).friendlyMessage
+          : undefined) ||
+        (e instanceof Error ? e.message : undefined) ||
+        "Data gagal disimpan.";
+      show(msg, "error");
     }
   };
 
@@ -136,7 +174,6 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     setLogoFile(null);
     setLogoState("default");
   };
-
   const cancelDok = () => {
     setDokFile(null);
     setDokState("default");
@@ -146,7 +183,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     { label: "Material" },
     { label: "Peralatan" },
     { label: "Tenaga Kerja" },
-  ] as { label: string }[];
+  ] as const;
 
   const handleAddRow = () => {
     if (activeTab === 0) materialRef.current?.addRow();
@@ -154,7 +191,6 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     else tenagaRef.current?.addRow();
   };
 
-  const currentQuery = queryByTab[activeTab] ?? "";
   const currentFilters = filtersByTab[activeTab] ?? initialFilters;
 
   const setCurrentQuery = (v: string) => {
@@ -164,7 +200,6 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
       return next;
     });
   };
-
   const setCurrentFilters = (v: FilterOption[]) => {
     setFiltersByTab((prev) => {
       const next = [...prev];
@@ -217,17 +252,15 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
             <MUISelect
               label="Kategori Vendor/Perusahaan"
               value={kategoriValue}
-              onChange={(val) => {
-                const opt = (kategoriOptions as any[]).find(
-                  (o) => o.value === val
-                );
-                if (opt) setKategori(opt as any);
-                else setKategori(null as any);
+              onChange={(val: string) => {
+                const opt = findUiOption(kategoriOpts, val) ?? null;
+                (setKategori as (o: UiOption | null) => void)(opt);
               }}
-              options={kategoriOptions as any}
+              options={kategoriOpts}
               placeholder="Pilih kategori vendor/perusahaan"
               required
             />
+
             <div>
               <p className="text-B2">Sumber daya yang dimiliki</p>
 
@@ -242,7 +275,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
                       bgcolor: "var(--color-surface-light-background)",
                     }}
                     value={activeTab}
-                    onChange={(i: number) => setActiveTab(i)}
+                    onChange={(i: number) => setActiveTab(i as 0 | 1 | 2)}
                   />
                 </div>
                 <div className="mt-1">
@@ -334,25 +367,22 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               <MUISelect
                 label="Pilih Provinsi"
                 value={payload.provinsi_id || ""}
-                onChange={(val) => {
-                  const opt = (provinsiOptions as any[]).find(
-                    (o) => o.value === val
-                  );
-                  if (opt) handleProvinsiChange(opt as any);
+                onChange={(val: string) => {
+                  const opt = findUiOption(provOpts, val) ?? null;
+                  (handleProvinsiChange as (o: UiOption | null) => void)(opt);
                 }}
-                options={provinsiOptions as any}
+                options={provOpts}
                 placeholder="Pilih Provinsi"
                 required
               />
               <MUISelect
                 label="Pilih Kota"
                 value={payload.kota_id || ""}
-                onChange={(val) => {
-                  const opt =
-                    (kotaOptions as any[]).find((o) => o.value === val) || null;
-                  handleKotaChange(opt as any);
+                onChange={(val: string) => {
+                  const opt = findUiOption(kotaOpts, val) ?? null;
+                  (handleKotaChange as (o: UiOption | null) => void)(opt);
                 }}
-                options={kotaOptions as any}
+                options={kotaOpts}
                 placeholder="Pilih Kota"
                 required
               />

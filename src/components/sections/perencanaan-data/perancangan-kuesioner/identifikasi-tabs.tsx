@@ -45,11 +45,12 @@ function useSearchFilter<T extends Record<string, unknown>>(
             .includes(lower)
         );
       }
-      return filters.some((key) =>
-        String((row as any)[key] ?? "")
+      return filters.some((key) => {
+        const v = (row as Record<string, unknown>)[key];
+        return String(v ?? "")
           .toLowerCase()
-          .includes(lower)
-      );
+          .includes(lower);
+      });
     });
   }, [all, lower, filters]);
 }

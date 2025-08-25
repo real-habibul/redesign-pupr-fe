@@ -19,7 +19,10 @@ function isAbsoluteUrl(url?: string) {
   return !!url && /^https?:\/\//i.test(url);
 }
 
-export type AxiosErrorWithFriendly<T = any, D = any> = AxiosError<T, D> & {
+export type AxiosErrorWithFriendly<T = unknown, D = unknown> = AxiosError<
+  T,
+  D
+> & {
   friendlyMessage?: string;
 };
 
@@ -37,7 +40,7 @@ function setHeader(
 ) {
   if (!value) return;
   if (headers instanceof AxiosHeaders) headers.set(key, value);
-  else (headers as any)[key] = value;
+  else (headers as unknown as Record<string, string>)[key] = value;
 }
 
 function isOffline() {
@@ -47,18 +50,34 @@ function isOffline() {
   return false;
 }
 
+type ErrorBag = Record<string, unknown>;
+function firstErrorFromErrorsBag(errors: unknown): string | undefined {
+  if (!errors || typeof errors !== "object") return undefined;
+  const bag = errors as ErrorBag;
+  const firstKey = Object.keys(bag)[0];
+  const val = firstKey ? bag[firstKey] : undefined;
+  if (Array.isArray(val)) {
+    const first = val.find((v) => typeof v === "string");
+    if (typeof first === "string") return first;
+  }
+  if (typeof val === "string") return val;
+  return undefined;
+}
+
 function mapFriendlyMessage(axErr: AxiosErrorWithFriendly) {
-  const data = axErr.response?.data as any | undefined;
-  const firstField =
-    data?.errors && typeof data.errors === "object"
-      ? Object.keys(data.errors)[0]
+  const data = axErr.response?.data as unknown;
+  const msgFromErrors =
+    data && typeof data === "object"
+      ? firstErrorFromErrorsBag((data as Record<string, unknown>).errors)
       : undefined;
-  const firstMsg =
-    firstField && Array.isArray(data?.errors?.[firstField])
-      ? data.errors[firstField][0]
+  const msgField =
+    data &&
+    typeof data === "object" &&
+    typeof (data as Record<string, unknown>).message === "string"
+      ? ((data as Record<string, unknown>).message as string)
       : undefined;
   return (
-    firstMsg || data?.message || axErr.message || "Terjadi kesalahan jaringan."
+    msgFromErrors || msgField || axErr.message || "Terjadi kesalahan jaringan."
   );
 }
 
@@ -72,11 +91,11 @@ function mapAutoAlertMessage(axErr: AxiosErrorWithFriendly) {
   return null;
 }
 
-function toPlainParams(p?: InternalAxiosRequestConfig["params"]) {
+function toPlainParams(p?: InternalAxiosRequestConfig["params"]): unknown {
   if (!p) return undefined;
   if (p instanceof URLSearchParams) return Object.fromEntries(p.entries());
-  if (typeof p === "object") return { ...(p as any) };
-  return p as any;
+  if (typeof p === "object") return { ...(p as Record<string, unknown>) };
+  return p as unknown;
 }
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -91,9 +110,11 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
   const hasBody = !!config.data;
   const contentTypeAlreadySet =
-    headers.get?.("Content-Type") ||
-    (headers as any)["Content-Type"] ||
-    (headers as any)["content-type"];
+    (headers instanceof AxiosHeaders
+      ? headers.get("Content-Type")
+      : undefined) ??
+    (headers as unknown as Record<string, unknown>)["Content-Type"] ??
+    (headers as unknown as Record<string, unknown>)["content-type"];
   const isMultipart =
     typeof FormData !== "undefined" && config.data instanceof FormData;
   const isBlob = typeof Blob !== "undefined" && config.data instanceof Blob;
@@ -128,7 +149,7 @@ http.interceptors.response.use(
   (r) => r,
   (err: unknown) => {
     if (axios.isAxiosError(err)) {
-      const axErr = err as AxiosErrorWithFriendly<any>;
+      const axErr = err as AxiosErrorWithFriendly<unknown>;
       axErr.friendlyMessage = mapFriendlyMessage(axErr);
       const autoMsg = mapAutoAlertMessage(axErr);
       if (autoMsg) emitAlert(autoMsg, "error");

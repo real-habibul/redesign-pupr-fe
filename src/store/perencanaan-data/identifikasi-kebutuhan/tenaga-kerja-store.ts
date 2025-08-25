@@ -13,18 +13,18 @@ export type TenagaKerja = {
 };
 
 function safeRandomId(): string {
-  if (
-    typeof crypto !== "undefined" &&
-    typeof (crypto as any).randomUUID === "function"
-  ) {
-    return (crypto as any).randomUUID();
+  const c = (
+    globalThis as typeof globalThis & {
+      crypto?: Crypto & { randomUUID?: () => string };
+    }
+  ).crypto;
+
+  if (c && typeof c.randomUUID === "function") {
+    return c.randomUUID();
   }
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.getRandomValues === "function"
-  ) {
+  if (c && typeof c.getRandomValues === "function") {
     const b = new Uint8Array(16);
-    crypto.getRandomValues(b);
+    c.getRandomValues(b);
     b[6] = (b[6] & 0x0f) | 0x40;
     b[8] = (b[8] & 0x3f) | 0x80;
     const hex = Array.from(b, (x) => x.toString(16).padStart(2, "0"));
@@ -39,7 +39,11 @@ type TenagaState = {
   byId: Record<string, TenagaKerja>;
   order: string[];
   bulkInit: (items: TenagaKerja[]) => void;
-  setField: (id: string, key: keyof TenagaKerja, value: any) => void;
+  setField: <T extends keyof TenagaKerja>(
+    id: string,
+    key: T,
+    value: TenagaKerja[T]
+  ) => void;
   remove: (id: string) => void;
 };
 

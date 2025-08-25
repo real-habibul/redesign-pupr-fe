@@ -11,6 +11,8 @@ import {
 import type {
   ProvinceOption,
   IdentifikasiKebutuhanFormValues,
+  City,
+  TenagaKerja,
 } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import Pagination from "@components/ui/pagination";
 import TenagaKerjaRow, { Option } from "./tenaga-kerja-row";
@@ -19,13 +21,32 @@ import {
   useTenagaOrder,
 } from "@store/perencanaan-data/identifikasi-kebutuhan/tenaga-kerja-store";
 
+type SetFieldValue = (
+  field: string,
+  value: unknown,
+  shouldValidate?: boolean
+) => void;
+
 type Props = {
   values: IdentifikasiKebutuhanFormValues;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: SetFieldValue;
   provincesOptions?: ProvinceOption[];
   query: string;
   filterKeys: string[];
 };
+
+const TENAGA_PATH = "tenagaKerjas";
+
+// Representasi aman untuk objek Tenaga Kerja di store (boleh partial + field UI)
+type TenagaLike = Partial<TenagaKerja> & Record<string, unknown>;
+
+// Ambil byId dari store dengan tipe aman
+function getByIdMap(): Record<string, TenagaLike> {
+  const state = useTenagaStore.getState() as unknown as {
+    byId: Record<string, TenagaLike>;
+  };
+  return state.byId ?? {};
+}
 
 function useDebounced<T>(value: T, delay = 250) {
   const [v, setV] = useState(value);
@@ -35,8 +56,6 @@ function useDebounced<T>(value: T, delay = 250) {
   }, [value, delay]);
   return v;
 }
-
-const TENAGA_PATH = "tenagaKerjas";
 
 export default function TenagaKerjaForm({
   values,
@@ -51,10 +70,14 @@ export default function TenagaKerjaForm({
   const order = useTenagaOrder();
   const bulkInit = useTenagaStore((s) => s.bulkInit);
 
+  const tenagaArr = useMemo(
+    () => (values.tenagaKerjas ?? []) as TenagaKerja[],
+    [values.tenagaKerjas]
+  );
+
   useEffect(() => {
-    const arr = (values as any)[TENAGA_PATH] as any[] | undefined;
-    bulkInit(arr ?? []);
-  }, [(values as any)[TENAGA_PATH]?.length, bulkInit]);
+    bulkInit(tenagaArr);
+  }, [bulkInit, tenagaArr]);
 
   const handlePageChange = useCallback(
     (p: number) => startTransition(() => setCurrentPage(p)),
@@ -70,7 +93,7 @@ export default function TenagaKerjaForm({
       (provincesOptions ?? []).map((p) => ({
         value: String(p.value),
         label: p.label,
-        cities: p.cities ?? [],
+        cities: (p.cities ?? []) as City[],
       })),
     [provincesOptions]
   );
@@ -83,11 +106,13 @@ export default function TenagaKerjaForm({
   const getCityOptions = useCallback(
     (provValue: string | number | "") => {
       const sp = provOptionsFull.find((p) => p.value === String(provValue));
-      const cities = sp?.cities ?? [];
-      return cities.map((c: any) => ({
-        value: String(c.cities_id),
-        label: c.cities_name,
-      })) as Option[];
+      const cities = (sp?.cities ?? []) as City[];
+      return cities.map(
+        (c): Option => ({
+          value: String(c.cities_id),
+          label: c.cities_name,
+        })
+      );
     },
     [provOptionsFull]
   );
@@ -106,43 +131,50 @@ export default function TenagaKerjaForm({
   }, [provOptionsFull]);
 
   const filteredIds = useMemo(() => {
-    const state = useTenagaStore.getState();
-    const byId = state.byId;
+    const byId = getByIdMap();
     if (!qLower && !filterKeys?.length) return order;
+
     const keys = filterKeys ?? [];
     const res: string[] = [];
 
-    const readsAll = (it: any) => {
-      const cols = [
-        "jenis_tenaga_kerja",
-        "satuan",
-        "jumlah_kebutuhan",
-        "kodefikasi",
-        "provincies_id",
-        "cities_id",
-      ];
+    const cols = [
+      "jenis_tenaga_kerja",
+      "satuan",
+      "jumlah_kebutuhan",
+      "kodefikasi",
+      "provincies_id",
+      "cities_id",
+    ] as const;
+
+    const readsAll = (it: TenagaLike) => {
       for (let i = 0; i < cols.length; i++) {
         const k = cols[i];
         let v: string;
-        if (k === "provincies_id")
+        if (k === "provincies_id") {
           v = provIdToName[String(it?.provincies_id ?? "")] ?? "";
-        else if (k === "cities_id")
+        } else if (k === "cities_id") {
           v = cityIdToName[String(it?.cities_id ?? "")] ?? "";
-        else v = String(it?.[k] ?? "");
+        } else {
+          const raw = (it as Record<string, unknown>)[k];
+          v = typeof raw === "string" ? raw : String(raw ?? "");
+        }
         if (v.toLowerCase().includes(qLower)) return true;
       }
       return false;
     };
 
-    const readsKeys = (it: any) => {
+    const readsKeys = (it: TenagaLike) => {
       for (let i = 0; i < keys.length; i++) {
-        const k = keys[i];
+        const k = keys[i]!;
         let v: string;
-        if (k === "provincies_id")
+        if (k === "provincies_id") {
           v = provIdToName[String(it?.provincies_id ?? "")] ?? "";
-        else if (k === "cities_id")
+        } else if (k === "cities_id") {
           v = cityIdToName[String(it?.cities_id ?? "")] ?? "";
-        else v = String(it?.[k] ?? "");
+        } else {
+          const raw = (it as Record<string, unknown>)[k];
+          v = typeof raw === "string" ? raw : String(raw ?? "");
+        }
         if (v.toLowerCase().includes(qLower)) return true;
       }
       return false;
@@ -182,7 +214,9 @@ export default function TenagaKerjaForm({
       const idx = indexById[id];
       if (idx === undefined) return;
       const path = `${TENAGA_PATH}.${idx}.${key}`;
-      const val = (useTenagaStore.getState().byId[id] as any)?.[key];
+      const byId = getByIdMap();
+      const row = byId[id] as Record<string, unknown> | undefined;
+      const val = row ? row[key] : undefined;
       setFieldValue(path, val);
     },
     [indexById, setFieldValue]

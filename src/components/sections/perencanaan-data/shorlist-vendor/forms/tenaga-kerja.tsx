@@ -20,6 +20,14 @@ type Props = {
   filterKeys?: Array<keyof VendorItem>;
 };
 
+const DEFAULT_VENDOR_COLS: Array<keyof VendorItem> = [
+  "nama_vendor",
+  "sumber_daya",
+  "pemilik_vendor",
+  "alamat",
+  "kontak",
+];
+
 export default function TenagaKerjaShortlist({
   rows,
   hide,
@@ -33,17 +41,14 @@ export default function TenagaKerjaShortlist({
   const key: keyof FormValues = "tenaga_kerja";
 
   const q = (query ?? "").trim().toLowerCase();
-  const colsToScan = filterKeys?.length
-    ? filterKeys
-    : ([
-        "nama_vendor",
-        "sumber_daya",
-        "pemilik_vendor",
-        "alamat",
-        "kontak",
-      ] as Array<keyof VendorItem>);
 
-  const filtered = React.useMemo(
+  // ✅ Stabilkan daftar kolom yang di-scan
+  const colsToScan = useMemo<Array<keyof VendorItem>>(
+    () => (filterKeys && filterKeys.length ? filterKeys : DEFAULT_VENDOR_COLS),
+    [filterKeys]
+  );
+
+  const filtered = useMemo(
     () =>
       q
         ? rows.filter((r) =>
@@ -81,11 +86,11 @@ export default function TenagaKerjaShortlist({
   );
 
   const setAllVisible = React.useCallback(
-    (rows: VendorItem[], next: boolean) => {
-      const ids = new Set(rows.map((r) => String(r.id)));
+    (rowsToToggle: VendorItem[], next: boolean) => {
+      const ids = new Set(rowsToToggle.map((r) => String(r.id)));
       const base = values[key].filter((i) => !ids.has(String(i.value)));
       const additions = next
-        ? rows.map((r) => ({ value: r.id, checked: true as const }))
+        ? rowsToToggle.map((r) => ({ value: r.id, checked: true as const }))
         : [];
       setFieldValue(key, [...base, ...additions]);
     },

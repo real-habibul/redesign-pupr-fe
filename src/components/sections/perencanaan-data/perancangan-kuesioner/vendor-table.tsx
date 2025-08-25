@@ -22,7 +22,7 @@ const ITEMS_PER_PAGE = 10;
 export default function VendorTable({
   vendors,
   onOpenModal,
-  onRemoveRow,
+  // onRemoveRow: _onRemoveRow,
   query = "",
   filterKeys = [],
 }: Props) {
@@ -41,6 +41,7 @@ export default function VendorTable({
   const filtered = useMemo(() => {
     const list = rows;
     if (!lower) return list;
+
     if (!filterKeys || filterKeys.length === 0) {
       return list.filter((row) =>
         Object.values(row).some((v) =>
@@ -50,19 +51,16 @@ export default function VendorTable({
         )
       );
     }
+
     return list.filter((row) =>
-      filterKeys.some((key) =>
-        String((row as any)[key] ?? "")
+      filterKeys.some((key) => {
+        const value = (row as Record<string, unknown>)[key];
+        return String(value ?? "")
           .toLowerCase()
-          .includes(lower)
-      )
+          .includes(lower);
+      })
     );
   }, [rows, lower, filterKeys]);
-
-  const removeRow = (id: number | string) => {
-    setRows((prev) => prev.filter((r) => String(r.id) !== String(id)));
-    onRemoveRow?.(id);
-  };
 
   const cols: ColumnDef<VendorItem>[] = [
     { key: "nama_vendor", header: "Responden/Vendor", className: "w-[252px]" },

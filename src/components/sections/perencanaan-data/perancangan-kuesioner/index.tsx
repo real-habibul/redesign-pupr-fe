@@ -1,10 +1,17 @@
 "use client";
 import * as React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  startTransition,
+} from "react";
 
 import Stepper from "@components/ui/stepper";
 import Button from "@components/ui/button";
 import SearchBox from "@components/ui/searchbox";
+import type { FilterOption as SearchBoxFilter } from "@components/ui/searchbox";
 import IdentifikasiTabs from "@components/sections/perencanaan-data/perancangan-kuesioner/identifikasi-tabs";
 import InfoUmumCard from "@components/sections/perencanaan-data/perancangan-kuesioner/info-umum-card";
 import VendorTable from "@components/sections/perencanaan-data/perancangan-kuesioner/vendor-table";
@@ -38,6 +45,16 @@ const STEP_LABELS = [
   "Perancangan Kuesioner",
 ];
 
+// Bentuk respons dari fetchPerencanaanData (akomodir dua kemungkinan key tenaga kerja)
+type PerencanaanDataResponse = {
+  informasi_umum?: CommonInformation;
+  material?: MaterialItem[];
+  peralatan?: PeralatanItem[];
+  tenagaKerja?: TenagaKerjaItem[];
+  tenaga_kerja?: TenagaKerjaItem[];
+  shortlist_vendor?: VendorItem[];
+};
+
 export default function Perancangan_Kuesioner_Section() {
   const [currentStep] = useState(3);
   const [info, setInfo] = useState<CommonInformation>({} as CommonInformation);
@@ -54,28 +71,32 @@ export default function Perancangan_Kuesioner_Section() {
 
   const informasiUmumId =
     typeof window !== "undefined"
-      ? localStorage.getItem("informasi_umum_id")
+      ? window.localStorage.getItem("informasi_umum_id")
       : null;
 
   const hydrate = useCallback(async () => {
     if (!informasiUmumId) return;
-    const result = await fetchPerencanaanData(informasiUmumId);
+    const result = (await fetchPerencanaanData(
+      informasiUmumId
+    )) as PerencanaanDataResponse;
+
     const material = Array.isArray(result.material) ? result.material : [];
     const peralatan = Array.isArray(result.peralatan) ? result.peralatan : [];
-    const tenagaKerja = Array.isArray((result as any).tenagaKerja)
-      ? (result as any).tenagaKerja
-      : Array.isArray((result as any).tenaga_kerja)
-      ? (result as any).tenaga_kerja
+    const tenagaKerja = Array.isArray(result.tenagaKerja)
+      ? result.tenagaKerja
+      : Array.isArray(result.tenaga_kerja)
+      ? result.tenaga_kerja
       : [];
-    const vendors = Array.isArray(result.shortlist_vendor)
+    const shortlist = Array.isArray(result.shortlist_vendor)
       ? result.shortlist_vendor
       : [];
-    const info = result.informasi_umum ?? {};
+    const info = (result.informasi_umum ?? {}) as CommonInformation;
+
     setInfo(info);
     setMaterials(material);
     setTools(peralatan);
     setWorkers(tenagaKerja);
-    setVendors(vendors);
+    setVendors(shortlist);
   }, [informasiUmumId]);
 
   useEffect(() => {
@@ -114,20 +135,19 @@ export default function Perancangan_Kuesioner_Section() {
     window.location.href = "/perencanaan_data/perencanaan_data_list";
   };
 
-  const baseOptions = useMemo(
+  const baseOptions = useMemo<SearchBoxFilter[]>(
     () => [
-      { label: "Responden/Vendor", value: "nama_vendor" },
-      { label: "Pemilik Vendor", value: "pemilik_vendor" },
-      { label: "Alamat", value: "alamat" },
-      { label: "Kontak", value: "kontak" },
+      { label: "Responden/Vendor", value: "nama_vendor", checked: false },
+      { label: "Pemilik Vendor", value: "pemilik_vendor", checked: false },
+      { label: "Alamat", value: "alamat", checked: false },
+      { label: "Kontak", value: "kontak", checked: false },
     ],
     []
   );
 
-  const [sbOptions, setSbOptions] = useState(
-    baseOptions.map((o) => ({ label: o.label, value: o.value, checked: false }))
-  );
+  const [sbOptions, setSbOptions] = useState<SearchBoxFilter[]>(baseOptions);
 
+  // Sinkronkan checked dengan store vendorFilters
   useEffect(() => {
     setSbOptions((prev) =>
       prev.map((o) => ({
@@ -137,19 +157,21 @@ export default function Perancangan_Kuesioner_Section() {
     );
   }, [vendorFilters]);
 
+  // Rebuild saat baseOptions berubah (misal dari memo invalidation)
   useEffect(() => {
     setSbOptions(
       baseOptions.map((o) => ({
-        label: o.label,
-        value: o.value,
+        ...o,
         checked: vendorFilters.includes(String(o.value)),
       }))
     );
-  }, [baseOptions]);
+  }, [baseOptions, vendorFilters]);
 
-  const applyFiltersToStore = React.useCallback(
-    (opts: { label: string; value?: string | number; checked: boolean }[]) => {
-      setSbOptions(opts as any);
+  const applyFiltersToStore = useCallback(
+    (opts: SearchBoxFilter[]) => {
+      // Update UI options
+      setSbOptions(opts);
+      // Kirim hanya keys yang checked ke store
       const active = opts
         .filter((f) => f.checked)
         .map((f) => String(f.value ?? ""));
@@ -192,7 +214,7 @@ export default function Perancangan_Kuesioner_Section() {
               <div className="w-[400px]">
                 <SearchBox
                   placeholder="Cari Vendor..."
-                  onSearch={setQuery}
+                  onSearch={(q) => startTransition(() => setQuery(q))}
                   withFilter
                   filterOptions={sbOptions}
                   onFilterClick={applyFiltersToStore}

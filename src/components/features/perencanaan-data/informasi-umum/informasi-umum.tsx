@@ -7,7 +7,6 @@ import SipastiForm from "@components/features/perencanaan-data/informasi-umum/si
 import ManualForm from "@components/features/perencanaan-data/informasi-umum/manual-form";
 import manualstore from "@store/perencanaan-data/informasi-umum/store";
 import { useInformasiUmum } from "@hooks/perencanaan-data/use-informasi-umum";
-import { useAlert } from "@components/ui/alert";
 // import { SubmitType } from "@types/perencanaan-data/informasi-umum"; // pakai kalau perlu submit
 
 type TabItem = { label: string; content: React.ReactNode };
@@ -23,9 +22,8 @@ const STEP_LABELS = [
 export default function InformasiUmum() {
   const [currentStep, setCurrentStep] = useState(0);
 
-  const { selectedTab, initialValueManual } = manualstore();
+  const { initialValueManual } = manualstore();
   const { balaiOptions } = useInformasiUmum();
-  const { show } = useAlert();
 
   useEffect(() => setCurrentStep(0), []);
 

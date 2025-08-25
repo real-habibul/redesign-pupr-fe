@@ -11,6 +11,8 @@ import {
 import type {
   ProvinceOption,
   IdentifikasiKebutuhanFormValues,
+  City,
+  Material,
 } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import { KELOMPOK_MATERIAL_OPTIONS } from "@constants/perencanaan-data/identifikasi-kebutuhan";
 import Pagination from "@components/ui/pagination";
@@ -22,9 +24,15 @@ import {
   useOrder,
 } from "@store/perencanaan-data/identifikasi-kebutuhan/material-store";
 
+type SetFieldValue = (
+  field: string,
+  value: unknown,
+  shouldValidate?: boolean
+) => void;
+
 type Props = {
   values: IdentifikasiKebutuhanFormValues;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: SetFieldValue;
   provincesOptions?: ProvinceOption[];
   query: string;
   filterKeys: string[];
@@ -37,6 +45,17 @@ function useDebounced<T>(value: T, delay = 250) {
     return () => clearTimeout(t);
   }, [value, delay]);
   return v;
+}
+
+// Representasi aman untuk objek material di store (bisa sebagian field + field tambahan UI)
+type MaterialLike = Partial<Material> & Record<string, unknown>;
+
+// Ambil byId dari store dengan tipe aman
+function getByIdMap(): Record<string, MaterialLike> {
+  const state = useMaterialsStore.getState() as unknown as {
+    byId: Record<string, MaterialLike>;
+  };
+  return state.byId ?? {};
 }
 
 export default function MaterialForm({
@@ -53,7 +72,8 @@ export default function MaterialForm({
   const bulkInit = useMaterialsStore((s) => s.bulkInit);
 
   useEffect(() => {
-    bulkInit((values.materials as any[]) ?? []);
+    // init store dengan data Formik
+    bulkInit((values.materials ?? []) as unknown as Material[]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.materials?.length]);
 
@@ -80,7 +100,7 @@ export default function MaterialForm({
       (provincesOptions ?? []).map((p) => ({
         value: String(p.value),
         label: p.label,
-        cities: p.cities ?? [],
+        cities: (p.cities ?? []) as City[],
       })),
     [provincesOptions]
   );
@@ -93,11 +113,13 @@ export default function MaterialForm({
   const getCityOptions = useCallback(
     (provValue: string | number | "") => {
       const sp = provOptionsFull.find((p) => p.value === String(provValue));
-      const cities = sp?.cities ?? [];
-      return cities.map((c: any) => ({
-        value: String(c.cities_id),
-        label: c.cities_name,
-      })) as Option[];
+      const cities = (sp?.cities ?? []) as City[];
+      return cities.map(
+        (c): Option => ({
+          value: String(c.cities_id),
+          label: c.cities_name,
+        })
+      );
     },
     [provOptionsFull]
   );
@@ -116,15 +138,14 @@ export default function MaterialForm({
   }, [provOptionsFull]);
 
   const filteredIds = useMemo(() => {
-    const state = useMaterialsStore.getState();
-    const byId = state.byId;
+    const byId = getByIdMap();
 
     if (!qLower && !filterKeys?.length) return order;
 
     const keys = filterKeys ?? [];
     const res: string[] = [];
 
-    const readsAll = (it: any) => {
+    const readsAll = (it: MaterialLike) => {
       const cols = [
         "nama_material",
         "satuan",
@@ -136,29 +157,36 @@ export default function MaterialForm({
         "merk",
         "provincies_id",
         "cities_id",
-      ];
+      ] as const;
+
       for (let i = 0; i < cols.length; i++) {
         const k = cols[i];
         let v: string;
-        if (k === "provincies_id")
+        if (k === "provincies_id") {
           v = provIdToName[String(it?.provincies_id ?? "")] ?? "";
-        else if (k === "cities_id")
+        } else if (k === "cities_id") {
           v = cityIdToName[String(it?.cities_id ?? "")] ?? "";
-        else v = String(it?.[k] ?? "");
+        } else {
+          const raw = (it as Record<string, unknown>)[k];
+          v = typeof raw === "string" ? raw : String(raw ?? "");
+        }
         if (v.toLowerCase().includes(qLower)) return true;
       }
       return false;
     };
 
-    const readsKeys = (it: any) => {
+    const readsKeys = (it: MaterialLike) => {
       for (let i = 0; i < keys.length; i++) {
-        const k = keys[i];
+        const k = keys[i]!;
         let v: string;
-        if (k === "provincies_id")
+        if (k === "provincies_id") {
           v = provIdToName[String(it?.provincies_id ?? "")] ?? "";
-        else if (k === "cities_id")
+        } else if (k === "cities_id") {
           v = cityIdToName[String(it?.cities_id ?? "")] ?? "";
-        else v = String(it?.[k] ?? "");
+        } else {
+          const raw = (it as Record<string, unknown>)[k];
+          v = typeof raw === "string" ? raw : String(raw ?? "");
+        }
         if (v.toLowerCase().includes(qLower)) return true;
       }
       return false;
@@ -198,7 +226,9 @@ export default function MaterialForm({
       const idx = indexById[id];
       if (idx === undefined) return;
       const path = `materials.${idx}.${key}`;
-      const val = (useMaterialsStore.getState().byId[id] as any)?.[key];
+      const byId = getByIdMap();
+      const row = byId[id] as Record<string, unknown> | undefined;
+      const val = row ? row[key] : undefined;
       setFieldValue(path, val);
     },
     [indexById, setFieldValue]

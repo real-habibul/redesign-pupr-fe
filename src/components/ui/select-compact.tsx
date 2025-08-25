@@ -22,7 +22,7 @@ export default function SelectCompat({
   value,
   onSelect,
   isRequired,
-  errorMessage,
+  // errorMessage,
   ...rest
 }: SelectCompatProps) {
   return (

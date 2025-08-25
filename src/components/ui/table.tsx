@@ -252,15 +252,23 @@ export default function DataTableMui<T extends object>({
                       )}
                     </TableCell>
                   )}
-                  {columns.map((col, cidx) => (
-                    <TableCell
-                      key={cidx}
-                      className={clsx("px-3 py-4 align-middle", col.className)}>
-                      {col.cell
-                        ? col.cell(row as any, start + i)
-                        : String((row as any)[col.key])}
-                    </TableCell>
-                  ))}
+                  {columns.map((col, cidx) => {
+                    const value = (row as unknown as Record<string, unknown>)[
+                      String(col.key)
+                    ];
+                    return (
+                      <TableCell
+                        key={cidx}
+                        className={clsx(
+                          "px-3 py-4 align-middle",
+                          col.className
+                        )}>
+                        {col.cell
+                          ? col.cell(row, start + i)
+                          : String(value ?? "")}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
             })}

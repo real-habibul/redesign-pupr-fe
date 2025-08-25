@@ -11,6 +11,8 @@ import {
 import type {
   ProvinceOption,
   IdentifikasiKebutuhanFormValues,
+  City,
+  Peralatan,
 } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import { KELOMPOK_PERALATAN_OPTIONS } from "@constants/perencanaan-data/identifikasi-kebutuhan";
 import Pagination from "@components/ui/pagination";
@@ -22,9 +24,15 @@ import {
   usePeralatanOrder,
 } from "@store/perencanaan-data/identifikasi-kebutuhan/peralatan-store";
 
+type SetFieldValue = (
+  field: string,
+  value: unknown,
+  shouldValidate?: boolean
+) => void;
+
 type Props = {
   values: IdentifikasiKebutuhanFormValues;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: SetFieldValue;
   provincesOptions?: ProvinceOption[];
   query: string;
   filterKeys: string[];
@@ -37,6 +45,16 @@ function useDebounced<T>(value: T, delay = 250) {
     return () => clearTimeout(t);
   }, [value, delay]);
   return v;
+}
+
+// Representasi aman untuk objek peralatan di store (boleh partial + field UI)
+type PeralatanLike = Partial<Peralatan> & Record<string, unknown>;
+
+function getByIdMap(): Record<string, PeralatanLike> {
+  const state = usePeralatanStore.getState() as unknown as {
+    byId: Record<string, PeralatanLike>;
+  };
+  return state.byId ?? {};
 }
 
 export default function PeralatanForm({
@@ -53,7 +71,7 @@ export default function PeralatanForm({
   const bulkInit = usePeralatanStore((s) => s.bulkInit);
 
   useEffect(() => {
-    bulkInit((values.peralatans as any[]) ?? []);
+    bulkInit((values.peralatans ?? []) as unknown as Peralatan[]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.peralatans?.length]);
 
@@ -80,7 +98,7 @@ export default function PeralatanForm({
       (provincesOptions ?? []).map((p) => ({
         value: String(p.value),
         label: p.label,
-        cities: p.cities ?? [],
+        cities: (p.cities ?? []) as City[],
       })),
     [provincesOptions]
   );
@@ -93,11 +111,13 @@ export default function PeralatanForm({
   const getCityOptions = useCallback(
     (provValue: string | number | "") => {
       const sp = provOptionsFull.find((p) => p.value === String(provValue));
-      const cities = sp?.cities ?? [];
-      return cities.map((c: any) => ({
-        value: String(c.cities_id),
-        label: c.cities_name,
-      })) as Option[];
+      const cities = (sp?.cities ?? []) as City[];
+      return cities.map(
+        (c): Option => ({
+          value: String(c.cities_id),
+          label: c.cities_name,
+        })
+      );
     },
     [provOptionsFull]
   );
@@ -116,12 +136,13 @@ export default function PeralatanForm({
   }, [provOptionsFull]);
 
   const filteredIds = useMemo(() => {
-    const state = usePeralatanStore.getState();
-    const byId = state.byId;
+    const byId = getByIdMap();
     if (!qLower && !filterKeys?.length) return order;
+
     const keys = filterKeys ?? [];
     const res: string[] = [];
-    const readsAll = (it: any) => {
+
+    const readsAll = (it: PeralatanLike) => {
       const cols = [
         "nama_peralatan",
         "satuan",
@@ -133,32 +154,41 @@ export default function PeralatanForm({
         "merk",
         "provincies_id",
         "cities_id",
-      ];
+      ] as const;
+
       for (let i = 0; i < cols.length; i++) {
         const k = cols[i];
         let v: string;
-        if (k === "provincies_id")
+        if (k === "provincies_id") {
           v = provIdToName[String(it?.provincies_id ?? "")] ?? "";
-        else if (k === "cities_id")
+        } else if (k === "cities_id") {
           v = cityIdToName[String(it?.cities_id ?? "")] ?? "";
-        else v = String(it?.[k] ?? "");
+        } else {
+          const raw = (it as Record<string, unknown>)[k];
+          v = typeof raw === "string" ? raw : String(raw ?? "");
+        }
         if (v.toLowerCase().includes(qLower)) return true;
       }
       return false;
     };
-    const readsKeys = (it: any) => {
+
+    const readsKeys = (it: PeralatanLike) => {
       for (let i = 0; i < keys.length; i++) {
-        const k = keys[i];
+        const k = keys[i]!;
         let v: string;
-        if (k === "provincies_id")
+        if (k === "provincies_id") {
           v = provIdToName[String(it?.provincies_id ?? "")] ?? "";
-        else if (k === "cities_id")
+        } else if (k === "cities_id") {
           v = cityIdToName[String(it?.cities_id ?? "")] ?? "";
-        else v = String(it?.[k] ?? "");
+        } else {
+          const raw = (it as Record<string, unknown>)[k];
+          v = typeof raw === "string" ? raw : String(raw ?? "");
+        }
         if (v.toLowerCase().includes(qLower)) return true;
       }
       return false;
     };
+
     for (const id of order) {
       const it = byId[id];
       if (!it) continue;
@@ -193,7 +223,9 @@ export default function PeralatanForm({
       const idx = indexById[id];
       if (idx === undefined) return;
       const path = `peralatans.${idx}.${key}`;
-      const val = (usePeralatanStore.getState().byId[id] as any)?.[key];
+      const byId = getByIdMap();
+      const row = byId[id] as Record<string, unknown> | undefined;
+      const val = row ? row[key] : undefined;
       setFieldValue(path, val);
     },
     [indexById, setFieldValue]

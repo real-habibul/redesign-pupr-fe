@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Field,
-  Form,
-  Formik,
-  type FieldProps,
-  type FormikHelpers,
-} from "formik";
+import { Field, Form, Formik, type FieldProps } from "formik";
 import { useRouter } from "next/navigation";
 import TextInput from "@components/ui/text-input";
 import MUISelect from "@components/ui/select";
@@ -45,10 +39,7 @@ const ManualForm: React.FC<ManualFormProps> = ({
     [balaiOptions]
   );
 
-  const handleSubmit = async (
-    values: ManualFormValues,
-    _helpers: FormikHelpers<ManualFormValues>
-  ) => {
+  const handleSubmit = async (values: ManualFormValues) => {
     const ok = await submitManual(values, { redirect: false });
     if (ok) {
       router.push("/perencanaan-data/identifikasi-kebutuhan");

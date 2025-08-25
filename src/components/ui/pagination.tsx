@@ -35,7 +35,7 @@ const Pagination: React.FC<Props> = ({
     const half = Math.floor(maxPageNumbers / 2);
 
     let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + maxPageNumbers - 1);
+    const end = Math.min(totalPages, start + maxPageNumbers - 1); // <- const
     start = Math.max(1, Math.min(start, end - maxPageNumbers + 1));
 
     if (start > 1) {
@@ -98,6 +98,7 @@ const Pagination: React.FC<Props> = ({
               />
             </button>
           </li>
+
           {pages.map((p, idx) =>
             p === "..." ? (
               <li key={`e-${idx}`} className="mx-1 select-none">
@@ -126,7 +127,7 @@ const Pagination: React.FC<Props> = ({
               onClick={() => safeChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className={`${baseBtn} ${
-                currentPage === 1 ? "cursor-pointer" : disabledBtn
+                currentPage === totalPages ? disabledBtn : "cursor-pointer"
               }`}>
               <ArrowRight2
                 size={20}

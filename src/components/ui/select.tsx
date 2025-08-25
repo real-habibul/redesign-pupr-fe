@@ -64,7 +64,6 @@ export default function MUISelect({
   };
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
-  const [focused, setFocused] = React.useState(false);
 
   return (
     <Box sx={{ minWidth, width: fullWidth ? "100%" : undefined }}>
@@ -93,8 +92,6 @@ export default function MUISelect({
             setOpen(false);
             setQuery("");
           }}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           renderValue={(selected) => {
             if (!selected) {
               return <span style={{ opacity: 0.6 }}>{placeholder}</span>;
