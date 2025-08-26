@@ -1,4 +1,3 @@
-// @components/button.tsx
 import * as React from "react";
 import MuiButton, { ButtonProps as MuiButtonProps } from "@mui/material/Button";
 import { SxProps, Theme } from "@mui/material/styles";
@@ -27,6 +26,7 @@ const baseStyle: SxProps<Theme> = {
   animation: "fadeIn 0.6s ease-in-out",
   animationDelay: "0.1s",
   animationFillMode: "both",
+  padding: "12px 24px",
   "@keyframes fadeIn": {
     from: { opacity: 0, transform: "translateY(8px)" },
     to: { opacity: 1, transform: "translateY(0)" },
@@ -91,12 +91,15 @@ export default function Button({
   variant = "solid_blue",
   label,
   sx,
-  fullWidth = true,
+  fullWidth = false,
   ...props
 }: ButtonProps) {
   const composedSx: SxProps<Theme> = [
     baseStyle,
     variantStyle(variant),
+    ...(fullWidth
+      ? [{ width: "100%", display: "flex" }]
+      : [{ width: "auto", display: "inline-flex" }]),
     ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
   ];
 

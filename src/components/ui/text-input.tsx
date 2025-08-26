@@ -13,6 +13,10 @@ interface TextInputProps {
   type?: string;
   placeholder?: string;
   isRequired?: boolean;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  error?: boolean;
+  helperText?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export default function TextInput({
@@ -22,12 +26,24 @@ export default function TextInput({
   type = "text",
   placeholder = "",
   isRequired = false,
+  onBlur,
+  error,
+  helperText,
+  disabled = false,
 }: TextInputProps) {
   const [touched, setTouched] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
 
   const isPasswordField = type === "password";
-  const isError = isRequired && touched && value.trim() === "";
+  const internalError = isRequired && touched && value.trim() === "";
+  const mergedError = error ?? internalError;
+  const mergedHelperText =
+    helperText ?? (internalError ? `${label} wajib diisi` : "");
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTouched(true);
+    onBlur?.(e);
+  };
 
   return (
     <TextField
@@ -42,15 +58,16 @@ export default function TextInput({
       }
       value={value}
       onChange={onChange}
-      onBlur={() => setTouched(true)}
+      onBlur={handleBlur}
       type={isPasswordField ? (showPassword ? "text" : "password") : type}
       placeholder={placeholder}
       required={isRequired}
-      error={isError}
-      helperText={isError ? `${label} wajib diisi` : ""}
+      error={mergedError}
+      helperText={mergedHelperText}
       InputLabelProps={{ required: false }}
       fullWidth
       variant="outlined"
+      disabled={disabled}
       InputProps={
         isPasswordField
           ? {
@@ -68,8 +85,6 @@ export default function TextInput({
       }
       sx={{
         "&, & *": { fontFamily: "Poppins, sans-serif !important" },
-
-        /* label */
         "& .MuiInputLabel-root": {
           color: "var(--color-emphasis-light-on-surface-small)",
         },
@@ -79,11 +94,10 @@ export default function TextInput({
         "& .MuiInputLabel-root.Mui-error": {
           color: "var(--color-solid-basic-red-500, #EF4444)",
         },
-
-        /* outline */
         "& .MuiOutlinedInput-root": {
           borderRadius: "16px",
-
+          height: "48px",
+          backgroundColor: "#fff",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "var(--color-surface-light-outline)",
           },
@@ -93,7 +107,6 @@ export default function TextInput({
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "var(--color-solid-basic-blue-500)",
           },
-
           "&.Mui-error .MuiOutlinedInput-notchedOutline": {
             borderColor: "var(--color-solid-basic-red-500, #EF4444)",
           },
@@ -104,9 +117,18 @@ export default function TextInput({
             borderColor: "var(--color-solid-basic-red-500, #EF4444)",
           },
         },
-
+        "& .MuiOutlinedInput-root.Mui-disabled": {
+          backgroundColor: "#f9fafb",
+          borderRadius: "16px",
+          cursor: "not-allowed",
+        },
         "& .MuiInputBase-input": {
           color: "var(--color-emphasis-light-on-surface-high)",
+        },
+        "& .MuiInputBase-input.Mui-disabled": {
+          color: "var(--color-emphasis-light-on-surface-medium)",
+          WebkitTextFillColor: "var(--color-emphasis-light-on-surface-medium)",
+          cursor: "not-allowed",
         },
         "& .MuiFormHelperText-root.Mui-error": {
           color: "var(--color-solid-basic-red-500, #EF4444)",

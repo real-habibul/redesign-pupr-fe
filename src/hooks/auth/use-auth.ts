@@ -9,7 +9,6 @@ export function useAuthActions() {
     }
     const res = await login({ email, password });
     if (!res.success) throw new Error(res.message || "Login gagal.");
-    // simpan token kalau ada
     if (res.data?.accessToken) localStorage.setItem("accessToken", res.data.accessToken);
     return res;
   }, []);
