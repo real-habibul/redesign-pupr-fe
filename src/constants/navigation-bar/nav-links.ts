@@ -1,7 +1,7 @@
 import type { LinkItem } from "../../types/navigation-bar/nav";
 
 export const NAV_LINKS: LinkItem[] = [
-  // { href: "/dashboard", label: "Beranda", roles: [] },
+  { href: "/dashboard", label: "Beranda", roles: [] },
 
   // {
   //   href: "/perencanaan-data/informasi-umum",
@@ -46,9 +46,9 @@ export const NAV_LINKS: LinkItem[] = [
   // { href: "/user-role/user-role", label: "Assign User", activePath: "/user-role", roles: [] }
 
   {
-    href: "/perencanaan-data/identifikasi-kebutuhan",
+    href: "/perencanaan-data/informasi-umum",
     label: "Perencanaan Data",
-    activePath: "/perencanaan-data/identifikasi-kebutuhan",
+    activePath: "/perencanaan-data/",
     roles: [],
   },
 ];
