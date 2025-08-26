@@ -3,6 +3,7 @@ import * as React from "react";
 import DataTableMui, { type ColumnDef } from "@components/ui/table";
 import TextInput from "@components/ui/text-input";
 import type { FilterOption } from "@components/ui/searchbox";
+import Pagination from "@components/ui/pagination";
 
 type Row = { id: number; sumber: string; spesifikasi: string };
 
@@ -31,6 +32,8 @@ function toCSV(rows: Row[]) {
     .join(",");
 }
 
+const ITEMS_PER_PAGE = 5;
+
 const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
   function SumberDayaTable(
     {
@@ -44,19 +47,9 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
     ref
   ) {
     const [rows, setRows] = React.useState<Row[]>([]);
+    const [page, setPage] = React.useState<number>(1);
 
-    // emit dibuat stable
-    const emit = React.useCallback(
-      (next: Row[]) => {
-        const nonEmpty = next.filter((r) => r.sumber.trim().length > 0);
-        onRowsChange?.(
-          nonEmpty.map(({ sumber, spesifikasi }) => ({ sumber, spesifikasi }))
-        );
-        onCSVChange?.(toCSV(nonEmpty));
-      },
-      [onRowsChange, onCSVChange]
-    );
-
+    // init rows
     React.useEffect(() => {
       const base: Row[] =
         initialItems && initialItems.length > 0
@@ -70,40 +63,37 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
               sumber: s,
               spesifikasi: "",
             }));
+
       setRows(
         base.length ? base : [{ id: Date.now(), sumber: "", spesifikasi: "" }]
       );
+      setPage(1);
     }, [initialCSV, initialItems]);
 
+    React.useEffect(() => {
+      const nonEmpty = rows.filter((r) => r.sumber.trim().length > 0);
+      onRowsChange?.(
+        nonEmpty.map(({ sumber, spesifikasi }) => ({ sumber, spesifikasi }))
+      );
+      onCSVChange?.(toCSV(nonEmpty));
+    }, [rows]);
+
     const addRow = React.useCallback(() => {
-      setRows((prev) => {
-        const next = [...prev, { id: Date.now(), sumber: "", spesifikasi: "" }];
-        emit(next);
-        return next;
-      });
-    }, [emit]);
+      setRows((prev) => [
+        ...prev,
+        { id: Date.now(), sumber: "", spesifikasi: "" },
+      ]);
+    }, []);
 
-    const removeRow = React.useCallback(
-      (id: number) => {
-        setRows((prev) => {
-          const next = prev.filter((r) => r.id !== id);
-          emit(next);
-          return next;
-        });
-      },
-      [emit]
-    );
+    const removeRow = React.useCallback((id: number) => {
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    }, []);
 
-    const updateRow = React.useCallback(
-      (id: number, patch: Partial<Row>) => {
-        setRows((prev) => {
-          const next = prev.map((r) => (r.id === id ? { ...r, ...patch } : r));
-          emit(next);
-          return next;
-        });
-      },
-      [emit]
-    );
+    const updateRow = React.useCallback((id: number, patch: Partial<Row>) => {
+      setRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
+      );
+    }, []);
 
     React.useImperativeHandle(ref, () => ({ addRow }), [addRow]);
 
@@ -182,15 +172,45 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
       return data;
     }, [rows, externalQuery, externalFilters]);
 
+    React.useEffect(() => {
+      setPage(1);
+    }, [externalQuery, externalFilters]);
+
+    React.useEffect(() => {
+      const totalPages = Math.max(
+        1,
+        Math.ceil(filtered.length / ITEMS_PER_PAGE)
+      );
+      if (page > totalPages) setPage(totalPages);
+      if (filtered.length === 0 && page !== 1) setPage(1);
+    }, [filtered.length, page]);
+
+    const pagedData = React.useMemo(() => {
+      const start = (page - 1) * ITEMS_PER_PAGE;
+      return filtered.slice(start, start + ITEMS_PER_PAGE);
+    }, [filtered, page]);
+
     return (
-      <DataTableMui<Row>
-        columns={columns}
-        data={filtered}
-        striped
-        stickyHeader
-        selection={undefined}
-        emptyMessage="Belum ada baris. Gunakan tombol Tambah Baris."
-      />
+      <>
+        <DataTableMui<Row>
+          columns={columns}
+          data={pagedData}
+          striped
+          stickyHeader
+          selection={undefined}
+          emptyMessage="Belum ada baris. Gunakan tombol Tambah Baris."
+        />
+
+        <div className="mt-3">
+          <Pagination
+            currentPage={page}
+            itemsPerPage={ITEMS_PER_PAGE}
+            totalData={filtered.length}
+            onPageChange={setPage}
+            maxPageNumbers={5}
+          />
+        </div>
+      </>
     );
   }
 );

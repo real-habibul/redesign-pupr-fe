@@ -1,3 +1,14 @@
+export type SumberDayaItem = {
+  nama: string;
+  spesifikasi: string;
+};
+
+export type SumberDayaGroup = {
+  material: SumberDayaItem[];
+  peralatan: SumberDayaItem[];
+  tenaga_kerja: SumberDayaItem[];
+};
+
 export type VendorPayload = {
   nama_vendor: string;
   jenis_vendor_id: number[];
@@ -5,7 +16,7 @@ export type VendorPayload = {
   alamat: string;
   no_telepon: string;
   no_hp: string;
-  sumber_daya: string;
+  sumber_daya: SumberDayaGroup[];
   nama_pic: string;
   provinsi_id: string;
   kota_id: string;
