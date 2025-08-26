@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://10.101.25.95:8000/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "10.101.25.95:8000/api";
 
 export const ENDPOINTS = {
   getBalaiKerja: "/get-balai-kerja",
