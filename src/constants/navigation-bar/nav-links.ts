@@ -14,7 +14,12 @@ export const NAV_LINKS: LinkItem[] = [
   //   ]
   // },
 
-  // { href: "/pengumpulan-data/informasi-tahap-pengumpulan", label: "Pengumpulan Data", activePath: "/pengumpulan-data", roles: [] },
+  {
+    href: "/pengumpulan-data/informasi-tahap-pengumpulan",
+    label: "Pengumpulan Data",
+    activePath: "/pengumpulan-data",
+    roles: [],
+  },
   // { href: "/pemeriksaan-data/informasi-pemeriksaan-data", label: "Pemeriksaan", activePath: "/pemeriksaan-data", roles: [] },
 
   {
@@ -23,7 +28,7 @@ export const NAV_LINKS: LinkItem[] = [
     activePath: "/input-vendor",
     roles: [],
     children: [
-      { href: "/vendor/inputvendor", label: "Input Data Responden/Vendor" },
+      { href: "/input-vendor", label: "Input Data Responden/Vendor" },
       {
         href: "/vendor/informasi-responden",
         label: "Informasi Responden/Vendor",

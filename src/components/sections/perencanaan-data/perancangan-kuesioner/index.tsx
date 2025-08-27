@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   startTransition,
 } from "react";
@@ -37,6 +38,12 @@ import {
 } from "@mui/material";
 import { useTahap4FiltersStore } from "../../../../store/perencanaan-data/perancangan-kuesioner/store";
 
+type PdfEditResult = {
+  url_kuisioner?: string;
+  file?: File | Blob;
+  meta?: Record<string, unknown>;
+};
+
 const NUMBER_OF_STEPS = 4;
 const STEP_LABELS = [
   "Informasi Umum",
@@ -45,7 +52,6 @@ const STEP_LABELS = [
   "Perancangan Kuesioner",
 ];
 
-// Bentuk respons dari fetchPerencanaanData (akomodir dua kemungkinan key tenaga kerja)
 type PerencanaanDataResponse = {
   informasi_umum?: CommonInformation;
   material?: MaterialItem[];
@@ -65,6 +71,8 @@ export default function Perancangan_Kuesioner_Section() {
   const [vendorModalOpen, setVendorModalOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const resolverRef = useRef<((res?: PdfEditResult) => void) | null>(null);
 
   const { vendorFilters, setVendorFilters } = useTahap4FiltersStore();
   const [query, setQuery] = useState("");
@@ -103,31 +111,62 @@ export default function Perancangan_Kuesioner_Section() {
     hydrate();
   }, [hydrate]);
 
-  const openVendorModal = (id: number) => {
-    setSelectedVendorId(id);
-    setVendorModalOpen(true);
-  };
+  const openVendorModalAsync = useCallback(
+    async (id: number): Promise<PdfEditResult | undefined> => {
+      setSelectedVendorId(id);
+      setVendorModalOpen(true);
+      return new Promise<PdfEditResult | undefined>((resolve) => {
+        resolverRef.current = resolve;
+      });
+    },
+    []
+  );
 
-  const handleVendorModalConfirm = async (payload: {
-    id_vendor: number;
-    material: number[];
-    peralatan: number[];
-    tenaga_kerja: number[];
-  }) => {
-    const shortlistVendorId = informasiUmumId
-      ? parseInt(informasiUmumId, 10)
-      : null;
-    await adjustIdentifikasiKebutuhan({
-      id_vendor: Number(payload.id_vendor),
-      shortlist_vendor_id: shortlistVendorId,
-      material: payload.material.map((id) => ({ id })),
-      peralatan: payload.peralatan.map((id) => ({ id })),
-      tenaga_kerja: payload.tenaga_kerja.map((id) => ({ id })),
-    });
+  const handleVendorModalConfirm = useCallback(
+    async (payload: {
+      id_vendor: number;
+      material: number[];
+      peralatan: number[];
+      tenaga_kerja: number[];
+    }) => {
+      const shortlistVendorId = informasiUmumId
+        ? parseInt(informasiUmumId, 10)
+        : null;
+
+      await adjustIdentifikasiKebutuhan({
+        id_vendor: Number(payload.id_vendor),
+        shortlist_vendor_id: shortlistVendorId,
+        material: payload.material.map((id) => ({ id })),
+        peralatan: payload.peralatan.map((id) => ({ id })),
+        tenaga_kerja: payload.tenaga_kerja.map((id) => ({ id })),
+      });
+
+      const refreshed = await fetchPerencanaanData(informasiUmumId as string);
+      const shortlist = Array.isArray((refreshed as any)?.shortlist_vendor)
+        ? (refreshed as any).shortlist_vendor
+        : [];
+      setVendors(shortlist);
+
+      const found = shortlist.find(
+        (v: any) => Number(v.id) === payload.id_vendor
+      );
+      const url = (found?.url_kuisioner ?? undefined) as string | undefined;
+
+      resolverRef.current?.({ url_kuisioner: url });
+      resolverRef.current = null;
+
+      setVendorModalOpen(false);
+      setSelectedVendorId(null);
+    },
+    [informasiUmumId]
+  );
+
+  const handleVendorModalClose = useCallback(() => {
     setVendorModalOpen(false);
     setSelectedVendorId(null);
-    await hydrate();
-  };
+    resolverRef.current?.(undefined);
+    resolverRef.current = null;
+  }, []);
 
   const handleFinalConfirm = async () => {
     if (!informasiUmumId) return;
@@ -147,7 +186,6 @@ export default function Perancangan_Kuesioner_Section() {
 
   const [sbOptions, setSbOptions] = useState<SearchBoxFilter[]>(baseOptions);
 
-  // Sinkronkan checked dengan store vendorFilters
   useEffect(() => {
     setSbOptions((prev) =>
       prev.map((o) => ({
@@ -157,7 +195,6 @@ export default function Perancangan_Kuesioner_Section() {
     );
   }, [vendorFilters]);
 
-  // Rebuild saat baseOptions berubah (misal dari memo invalidation)
   useEffect(() => {
     setSbOptions(
       baseOptions.map((o) => ({
@@ -169,9 +206,7 @@ export default function Perancangan_Kuesioner_Section() {
 
   const applyFiltersToStore = useCallback(
     (opts: SearchBoxFilter[]) => {
-      // Update UI options
       setSbOptions(opts);
-      // Kirim hanya keys yang checked ke store
       const active = opts
         .filter((f) => f.checked)
         .map((f) => String(f.value ?? ""));
@@ -225,7 +260,7 @@ export default function Perancangan_Kuesioner_Section() {
 
             <VendorTable
               vendors={vendors}
-              onOpenModal={openVendorModal}
+              onOpenModal={openVendorModalAsync}
               query={query}
               filterKeys={vendorFilters}
             />
@@ -274,7 +309,7 @@ export default function Perancangan_Kuesioner_Section() {
 
       <VendorDialog
         open={vendorModalOpen}
-        onClose={() => setVendorModalOpen(false)}
+        onClose={handleVendorModalClose}
         vendorId={selectedVendorId}
         informasiUmumId={informasiUmumId}
         onConfirm={handleVendorModalConfirm}

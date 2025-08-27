@@ -71,39 +71,32 @@ export default function IdentifikasiTabs({
 
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
 
-  // Query per tab
   const [materialQuery, setMaterialQuery] = useState("");
   const [peralatanQuery, setPeralatanQuery] = useState("");
   const [tenagaQuery, setTenagaQuery] = useState("");
 
-  // Debounced (via React concurrent hint)
   const dMatQ = useDeferredValue(materialQuery);
   const dPerQ = useDeferredValue(peralatanQuery);
   const dTenQ = useDeferredValue(tenagaQuery);
 
-  // Data hasil filter-search
   const matData = useSearchFilter(materials, materialFilters, dMatQ);
   const perData = useSearchFilter(tools, peralatanFilters, dPerQ);
   const tenData = useSearchFilter(workers, tenagaKerjaFilters, dTenQ);
 
-  // Pagination per tab
   const [pageMat, setPageMat] = useState(1);
   const [pagePer, setPagePer] = useState(1);
   const [pageTen, setPageTen] = useState(1);
 
-  // Reset page saat query/filter berubah
   useEffect(() => setPageMat(1), [dMatQ, materialFilters]);
   useEffect(() => setPagePer(1), [dPerQ, peralatanFilters]);
   useEffect(() => setPageTen(1), [dTenQ, tenagaKerjaFilters]);
 
-  // Reset page saat pindah tab
   useEffect(() => {
     if (activeTab === 0) setPageMat(1);
     if (activeTab === 1) setPagePer(1);
     if (activeTab === 2) setPageTen(1);
   }, [activeTab]);
 
-  // Opsi filter (fixed seperti halaman referensi)
   const filterOptionsByTab: SearchBoxFilter[] = useMemo(() => {
     if (activeTab === 0) {
       const active = new Set(materialFilters);
@@ -210,7 +203,6 @@ export default function IdentifikasiTabs({
     ];
   }, [activeTab, materialFilters, peralatanFilters, tenagaKerjaFilters]);
 
-  // Placeholder by tab
   const currentPlaceholder =
     activeTab === 0
       ? "Cari Material..."
@@ -218,7 +210,6 @@ export default function IdentifikasiTabs({
       ? "Cari Peralatan..."
       : "Cari Tenaga Kerja...";
 
-  // Handle search (pola sama dgn halaman referensi)
   const handleSearch = useCallback(
     (q: string) => {
       startTransition(() => {
@@ -230,7 +221,6 @@ export default function IdentifikasiTabs({
     [activeTab]
   );
 
-  // Handle filter (pola sama dgn halaman referensi)
   const handleFilterClick = useCallback(
     (filters: SearchBoxFilter[]) => {
       const keys = (filters ?? [])
@@ -268,7 +258,6 @@ export default function IdentifikasiTabs({
             value={activeTab}
             onChange={(idx) => {
               setActiveTab(idx as 0 | 1 | 2);
-              // reset query & filter saat pindah tab (meniru halaman referensi)
               setMaterialQuery("");
               setPeralatanQuery("");
               setTenagaQuery("");
