@@ -15,13 +15,16 @@ import type {
   Peralatan,
 } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import { KELOMPOK_PERALATAN_OPTIONS } from "@constants/perencanaan-data/identifikasi-kebutuhan";
-import Pagination from "@components/ui/pagination";
-import PeralatanRow, {
-  Option,
-} from "@components/sections/perencanaan-data/identifikasi-kebutuhan/peralatan-row";
+import DataTableMui, { type ColumnDef } from "@components/ui/table";
+import TextInput from "@components/ui/text-input";
+import MUISelect from "@components/ui/select";
+import Button from "@components/ui/button";
 import {
   usePeralatanStore,
   usePeralatanOrder,
+  usePeralatanField,
+  useSetPeralatanField as usePeralatanSetField,
+  useRemovePeralatanRow as usePeralatanRemoveRow,
 } from "@store/perencanaan-data/identifikasi-kebutuhan/peralatan-store";
 
 type SetFieldValue = (
@@ -47,14 +50,159 @@ function useDebounced<T>(value: T, delay = 250) {
   return v;
 }
 
-// Representasi aman untuk objek peralatan di store (boleh partial + field UI)
 type PeralatanLike = Partial<Peralatan> & Record<string, unknown>;
-
 function getByIdMap(): Record<string, PeralatanLike> {
   const state = usePeralatanStore.getState() as unknown as {
     byId: Record<string, PeralatanLike>;
   };
   return state.byId ?? {};
+}
+
+export type Option = { value: string; label: string };
+
+function TextCell({
+  id,
+  field,
+  label,
+  placeholder,
+  required,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  field:
+    | "nama_peralatan"
+    | "satuan"
+    | "spesifikasi"
+    | "kapasitas"
+    | "kodefikasi"
+    | "jumlah_kebutuhan"
+    | "merk";
+  label: string;
+  placeholder: string;
+  required?: boolean;
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = usePeralatanSetField();
+  const value = usePeralatanField(id, field);
+  return (
+    <TextInput
+      label={label}
+      value={String(value ?? "")}
+      onChange={(e) => setField(id, field, e.target.value)}
+      onBlur={() => onBlurSyncFormik(id, field)}
+      placeholder={placeholder}
+      isRequired={required}
+    />
+  );
+}
+
+function KelompokCell({
+  id,
+  options,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  options: Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = usePeralatanSetField();
+  const kelompok_peralatan = usePeralatanField(id, "kelompok_peralatan");
+  return (
+    <MUISelect
+      label="Kelompok Peralatan"
+      options={options}
+      value={kelompok_peralatan ? String(kelompok_peralatan) : ""}
+      onChange={(val: string) => {
+        setField(id, "kelompok_peralatan", val);
+        onBlurSyncFormik(id, "kelompok_peralatan");
+      }}
+      required
+      placeholder="Pilih Kelompok Peralatan"
+    />
+  );
+}
+
+function ProvCell({
+  id,
+  provOptions,
+  onBlurSyncFormik,
+  resetCity = true,
+}: {
+  id: string;
+  provOptions: Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+  resetCity?: boolean;
+}) {
+  const setField = usePeralatanSetField();
+  const provincies_id = usePeralatanField(id, "provincies_id");
+  return (
+    <MUISelect
+      label="Provinsi"
+      options={provOptions}
+      value={provincies_id ? String(provincies_id) : ""}
+      onChange={(val: string) => {
+        setField(id, "provincies_id", val);
+        if (resetCity) setField(id, "cities_id", "");
+        onBlurSyncFormik(id, "provincies_id");
+        onBlurSyncFormik(id, "cities_id");
+      }}
+      required
+      placeholder="Pilih Provinsi"
+    />
+  );
+}
+
+function CityCell({
+  id,
+  getCityOptions,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  getCityOptions: (prov: string | number | "") => Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = usePeralatanSetField();
+  const provincies_id = usePeralatanField(id, "provincies_id");
+  const cities_id = usePeralatanField(id, "cities_id");
+
+  const normalizedProvId: string | number | "" =
+    typeof provincies_id === "string" || typeof provincies_id === "number"
+      ? provincies_id
+      : "";
+
+  const cityOptions = useMemo(
+    () => getCityOptions(normalizedProvId),
+    [getCityOptions, normalizedProvId]
+  );
+
+  return (
+    <MUISelect
+      key={`city-${id}-${String(provincies_id ?? "")}`}
+      label="Kota"
+      options={cityOptions}
+      value={cities_id ? String(cities_id) : ""}
+      onChange={(val: string) => {
+        setField(id, "cities_id", val);
+        onBlurSyncFormik(id, "cities_id");
+      }}
+      required
+      placeholder="Pilih Kota"
+    />
+  );
+}
+
+function AksiCell({ id }: { id: string }) {
+  const remove = usePeralatanRemoveRow();
+  return (
+    <div className="text-center">
+      <Button
+        type="button"
+        variant="text_red"
+        label="Hapus"
+        onClick={() => remove(id)}
+      />
+    </div>
+  );
 }
 
 export default function PeralatanForm({
@@ -72,8 +220,7 @@ export default function PeralatanForm({
 
   useEffect(() => {
     bulkInit((values.peralatans ?? []) as unknown as Peralatan[]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.peralatans?.length]);
+  }, [values.peralatans?.length, bulkInit]);
 
   const handlePageChange = useCallback(
     (p: number) => startTransition(() => setCurrentPage(p)),
@@ -231,63 +378,171 @@ export default function PeralatanForm({
     [indexById, setFieldValue]
   );
 
+  type RowData = { id: string };
+  const data: RowData[] = useMemo(
+    () => visibleIds.map((id) => ({ id })),
+    [visibleIds]
+  );
+
+  const columns: ColumnDef<RowData>[] = useMemo(
+    () => [
+      {
+        key: "nama_peralatan",
+        header: "Nama Peralatan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="nama_peralatan"
+            label="Nama Peralatan"
+            placeholder="Masukkan Nama Peralatan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "satuan",
+        header: "Satuan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="satuan"
+            label="Satuan"
+            placeholder="Masukkan Satuan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "spesifikasi",
+        header: "Spesifikasi",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="spesifikasi"
+            label="Spesifikasi"
+            placeholder="Masukkan Spesifikasi"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "kapasitas",
+        header: "Kapasitas",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="kapasitas"
+            label="Kapasitas"
+            placeholder="Masukkan Kapasitas"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "kodefikasi",
+        header: "Kodefikasi",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="kodefikasi"
+            label="Kodefikasi"
+            placeholder="Masukkan Kodefikasi"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "kelompok_peralatan",
+        header: "Kelompok Peralatan",
+        cell: (row) => (
+          <KelompokCell
+            id={row.id}
+            options={kelompokOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "jumlah_kebutuhan",
+        header: "Jumlah Kebutuhan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="jumlah_kebutuhan"
+            label="Jumlah Kebutuhan"
+            placeholder="Masukkan Jumlah Kebutuhan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "merk",
+        header: "Merk",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="merk"
+            label="Merk"
+            placeholder="Masukkan Merk"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "provincies_id",
+        header: "Provinsi",
+        cell: (row) => (
+          <ProvCell
+            id={row.id}
+            provOptions={provOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "cities_id",
+        header: "Kota",
+        cell: (row) => (
+          <CityCell
+            id={row.id}
+            getCityOptions={getCityOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "aksi",
+        header: "Aksi",
+        className: "text-center",
+        cell: (row) => <AksiCell id={row.id} />,
+      },
+    ],
+    [onBlurSyncFormik, kelompokOptions, provOptions, getCityOptions]
+  );
+
   return (
     <div className="rounded-[16px] overflow-visible">
-      <div className="rounded-[16px] border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full min-w-max">
-            <thead>
-              <tr className="bg-solid_basic_blue_100 text-left text-emphasis_light_on_surface_high uppercase tracking-wider">
-                <th className="px-3 py-6 text-base font-normal">No</th>
-                {[
-                  "Nama Peralatan",
-                  "Satuan",
-                  "Spesifikasi",
-                  "Kapasitas",
-                  "Kodefikasi",
-                  "Kelompok Peralatan",
-                  "Jumlah Kebutuhan",
-                  "Merk",
-                  "Provinsi",
-                  "Kota",
-                  "Aksi",
-                ].map((h) => (
-                  <th key={h} className="px-3 py-6 text-base font-normal">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-surface_light_background">
-              {visibleIds.map((id, i) => (
-                <PeralatanRow
-                  key={id}
-                  id={id}
-                  rowNumber={start + i + 1}
-                  provOptions={provOptions}
-                  getCityOptions={getCityOptions}
-                  kelompokOptions={kelompokOptions}
-                  onBlurSyncFormik={onBlurSyncFormik}
-                />
-              ))}
-              {visibleIds.length === 0 && (
-                <tr>
-                  <td
-                    className="px-3 py-6 text-center text-emphasis_light_on_surface_medium"
-                    colSpan={12}>
-                    Data tidak ditemukan
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <Pagination
-        currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        totalData={totalFiltered}
-        onPageChange={handlePageChange}
+      <DataTableMui
+        columns={columns}
+        data={data}
+        emptyMessage="Data tidak ditemukan"
+        striped
+        stickyHeader
+        tableClassName="min-w-max"
+        headerRowClassName="bg-solid_basic_blue_100 text-emphasis_light_on_surface_high"
+        pagination={{
+          currentPage,
+          itemsPerPage,
+          total: totalFiltered,
+          onPageChange: handlePageChange,
+        }}
       />
     </div>
   );

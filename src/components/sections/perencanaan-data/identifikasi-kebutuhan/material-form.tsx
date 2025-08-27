@@ -15,13 +15,16 @@ import type {
   Material,
 } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
 import { KELOMPOK_MATERIAL_OPTIONS } from "@constants/perencanaan-data/identifikasi-kebutuhan";
-import Pagination from "@components/ui/pagination";
-import MaterialRow, {
-  Option,
-} from "@components/sections/perencanaan-data/identifikasi-kebutuhan/material-row";
+import DataTableMui, { type ColumnDef } from "@components/ui/table";
+import TextInput from "@components/ui/text-input";
+import MUISelect from "@components/ui/select";
+import Button from "@components/ui/button";
 import {
   useMaterialsStore,
   useOrder,
+  useMaterialField,
+  useSetField,
+  useRemoveRow,
 } from "@store/perencanaan-data/identifikasi-kebutuhan/material-store";
 
 type SetFieldValue = (
@@ -47,15 +50,159 @@ function useDebounced<T>(value: T, delay = 250) {
   return v;
 }
 
-// Representasi aman untuk objek material di store (bisa sebagian field + field tambahan UI)
 type MaterialLike = Partial<Material> & Record<string, unknown>;
-
-// Ambil byId dari store dengan tipe aman
 function getByIdMap(): Record<string, MaterialLike> {
   const state = useMaterialsStore.getState() as unknown as {
     byId: Record<string, MaterialLike>;
   };
   return state.byId ?? {};
+}
+
+function TextCell({
+  id,
+  field,
+  label,
+  placeholder,
+  required,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  field:
+    | "nama_material"
+    | "satuan"
+    | "spesifikasi"
+    | "ukuran"
+    | "kodefikasi"
+    | "jumlah_kebutuhan"
+    | "merk";
+  label: string;
+  placeholder: string;
+  required?: boolean;
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = useSetField();
+  const value = useMaterialField(id, field);
+  return (
+    <TextInput
+      label={label}
+      value={String(value ?? "")}
+      onChange={(e) => setField(id, field, e.target.value)}
+      onBlur={() => onBlurSyncFormik(id, field)}
+      placeholder={placeholder}
+      isRequired={required}
+    />
+  );
+}
+
+export type Option = { value: string; label: string };
+
+function KelompokCell({
+  id,
+  options,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  options: Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = useSetField();
+  const kelompok_material = useMaterialField(id, "kelompok_material");
+  return (
+    <MUISelect
+      label="Kelompok Material"
+      options={options}
+      value={kelompok_material ? String(kelompok_material) : ""}
+      onChange={(val: string) => {
+        setField(id, "kelompok_material", val);
+        onBlurSyncFormik(id, "kelompok_material");
+      }}
+      required
+      placeholder="Pilih Kelompok Material"
+    />
+  );
+}
+
+function ProvCell({
+  id,
+  provOptions,
+  onBlurSyncFormik,
+  resetCity = true,
+}: {
+  id: string;
+  provOptions: Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+  resetCity?: boolean;
+}) {
+  const setField = useSetField();
+  const provincies_id = useMaterialField(id, "provincies_id");
+  return (
+    <MUISelect
+      label="Provinsi"
+      options={provOptions}
+      value={provincies_id ? String(provincies_id) : ""}
+      onChange={(val: string) => {
+        setField(id, "provincies_id", val);
+        if (resetCity) setField(id, "cities_id", "");
+        onBlurSyncFormik(id, "provincies_id");
+        onBlurSyncFormik(id, "cities_id");
+      }}
+      required
+      placeholder="Pilih Provinsi"
+    />
+  );
+}
+
+function CityCell({
+  id,
+  getCityOptions,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  getCityOptions: (prov: string | number | "") => Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = useSetField();
+  const provincies_id = useMaterialField(id, "provincies_id");
+  const cities_id = useMaterialField(id, "cities_id");
+
+  const normalizedProvId: string | number | "" =
+    typeof provincies_id === "string" || typeof provincies_id === "number"
+      ? provincies_id
+      : "";
+
+  const cityOptions = useMemo(
+    () => getCityOptions(normalizedProvId),
+    [getCityOptions, normalizedProvId]
+  );
+
+  return (
+    <MUISelect
+      key={`city-${id}-${String(provincies_id ?? "")}`}
+      label="Kota"
+      options={cityOptions}
+      value={cities_id ? String(cities_id) : ""}
+      onChange={(val: string) => {
+        setField(id, "cities_id", val);
+        onBlurSyncFormik(id, "cities_id");
+      }}
+      required
+      placeholder="Pilih Kota"
+    />
+  );
+}
+
+function AksiCell({ id }: { id: string }) {
+  const remove = useRemoveRow();
+  return (
+    <div className="text-center">
+      <Button
+        type="button"
+        variant="text_red"
+        label="Hapus"
+        onClick={() => remove(id)}
+      />
+    </div>
+  );
 }
 
 export default function MaterialForm({
@@ -72,9 +219,7 @@ export default function MaterialForm({
   const bulkInit = useMaterialsStore((s) => s.bulkInit);
 
   useEffect(() => {
-    // init store dengan data Formik
     bulkInit((values.materials ?? []) as unknown as Material[]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.materials?.length]);
 
   const handlePageChange = useCallback(
@@ -234,63 +379,173 @@ export default function MaterialForm({
     [indexById, setFieldValue]
   );
 
+  type RowData = { id: string };
+  const data: RowData[] = useMemo(
+    () => visibleIds.map((id) => ({ id })),
+    [visibleIds]
+  );
+
+  const columns: ColumnDef<RowData>[] = useMemo(
+    () => [
+      {
+        key: "nama_material",
+        header: "Nama Material",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="nama_material"
+            label="Nama Material"
+            placeholder="Masukkan Nama Material"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "satuan",
+        header: "Satuan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="satuan"
+            label="Satuan"
+            placeholder="Masukkan Satuan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "spesifikasi",
+        header: "Spesifikasi",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="spesifikasi"
+            label="Spesifikasi"
+            placeholder="Masukkan Spesifikasi"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "ukuran",
+        header: "Ukuran",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="ukuran"
+            label="Ukuran"
+            placeholder="Masukkan Ukuran"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "kodefikasi",
+        header: "Kodefikasi",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="kodefikasi"
+            label="Kodefikasi"
+            placeholder="Masukkan Kodefikasi"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "kelompok_material",
+        header: "Kelompok Material",
+        cell: (row) => (
+          <KelompokCell
+            id={row.id}
+            options={kelompokOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "jumlah_kebutuhan",
+        header: "Jumlah Kebutuhan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="jumlah_kebutuhan"
+            label="Jumlah Kebutuhan"
+            placeholder="Masukkan Jumlah Kebutuhan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "merk",
+        header: "Merk",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="merk"
+            label="Merk"
+            placeholder="Masukkan Merk"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "provincies_id",
+        header: "Provinsi",
+        cell: (row) => (
+          <ProvCell
+            id={row.id}
+            provOptions={provOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "cities_id",
+        header: "Kota",
+        cell: (row) => (
+          <CityCell
+            id={row.id}
+            getCityOptions={getCityOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "aksi",
+        header: "Aksi",
+        className: "text-center",
+        cell: (row) => <AksiCell id={row.id} />,
+      },
+    ],
+    [onBlurSyncFormik, kelompokOptions, provOptions, getCityOptions]
+  );
+
   return (
     <div className="rounded-[16px] overflow-visible">
-      <div className="rounded-[16px] border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full min-w-max">
-            <thead>
-              <tr className="bg-solid_basic_blue_100 text-left text-emphasis_light_on_surface_high uppercase tracking-wider">
-                <th className="px-3 py-6 text-base font-normal">No</th>
-                {[
-                  "Nama Material",
-                  "Satuan",
-                  "Spesifikasi",
-                  "Ukuran",
-                  "Kodefikasi",
-                  "Kelompok Material",
-                  "Jumlah Kebutuhan",
-                  "Merk",
-                  "Provinsi",
-                  "Kota",
-                  "Aksi",
-                ].map((h) => (
-                  <th key={h} className="px-3 py-6 text-base font-normal">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-surface_light_background">
-              {visibleIds.map((id, i) => (
-                <MaterialRow
-                  key={id}
-                  id={id}
-                  rowNumber={start + i + 1}
-                  provOptions={provOptions}
-                  getCityOptions={getCityOptions}
-                  kelompokOptions={kelompokOptions}
-                  onBlurSyncFormik={onBlurSyncFormik}
-                />
-              ))}
-              {visibleIds.length === 0 && (
-                <tr>
-                  <td
-                    className="px-3 py-6 text-center text-emphasis_light_on_surface_medium"
-                    colSpan={12}>
-                    Data tidak ditemukan
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <Pagination
-        currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        totalData={totalFiltered}
-        onPageChange={handlePageChange}
+      <DataTableMui
+        columns={columns}
+        data={data}
+        emptyMessage="Data tidak ditemukan"
+        striped
+        stickyHeader
+        containerClassName=""
+        paperClassName=""
+        tableClassName="min-w-max"
+        headerRowClassName="bg-solid_basic_blue_100 text-emphasis_light_on_surface_high"
+        pagination={{
+          currentPage,
+          itemsPerPage,
+          total: totalFiltered,
+          onPageChange: handlePageChange,
+        }}
       />
     </div>
   );

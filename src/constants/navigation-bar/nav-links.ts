@@ -1,7 +1,7 @@
 import type { LinkItem } from "../../types/navigation-bar/nav";
 
 export const NAV_LINKS: LinkItem[] = [
-  // { href: "/dashboard", label: "Beranda", roles: [] },
+  { href: "/dashboard", label: "Beranda", roles: [] },
 
   // {
   //   href: "/perencanaan-data/informasi-umum",
@@ -14,7 +14,12 @@ export const NAV_LINKS: LinkItem[] = [
   //   ]
   // },
 
-  // { href: "/pengumpulan-data/informasi-tahap-pengumpulan", label: "Pengumpulan Data", activePath: "/pengumpulan-data", roles: [] },
+  {
+    href: "/pengumpulan-data/informasi-tahap-pengumpulan",
+    label: "Pengumpulan Data",
+    activePath: "/pengumpulan-data",
+    roles: [],
+  },
   // { href: "/pemeriksaan-data/informasi-pemeriksaan-data", label: "Pemeriksaan", activePath: "/pemeriksaan-data", roles: [] },
 
   {
@@ -23,7 +28,7 @@ export const NAV_LINKS: LinkItem[] = [
     activePath: "/input-vendor",
     roles: [],
     children: [
-      { href: "/vendor/inputvendor", label: "Input Data Responden/Vendor" },
+      { href: "/input-vendor", label: "Input Data Responden/Vendor" },
       {
         href: "/vendor/informasi-responden",
         label: "Informasi Responden/Vendor",
@@ -46,9 +51,9 @@ export const NAV_LINKS: LinkItem[] = [
   // { href: "/user-role/user-role", label: "Assign User", activePath: "/user-role", roles: [] }
 
   {
-    href: "/perencanaan-data/identifikasi-kebutuhan",
+    href: "/perencanaan-data/informasi-umum",
     label: "Perencanaan Data",
-    activePath: "/perencanaan-data/identifikasi-kebutuhan",
+    activePath: "/perencanaan-data/",
     roles: [],
   },
 ];

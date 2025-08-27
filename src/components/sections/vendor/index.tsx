@@ -71,12 +71,12 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
   const [dokState, setDokState] = React.useState<FileState>("default");
   const [dokFile, setDokFile] = React.useState<File | null>(null);
 
-  const [sumberDetail, setSumberDetail] = React.useState<RowSD[]>([]);
   const [sumberMaterial, setSumberMaterial] = React.useState<RowSD[]>([]);
   const [sumberPeralatan, setSumberPeralatan] = React.useState<RowSD[]>([]);
   const [sumberTenaga, setSumberTenaga] = React.useState<RowSD[]>([]);
 
   const [activeTab, setActiveTab] = React.useState<0 | 1 | 2>(0);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const initialFilters: FilterOption[] = React.useMemo(
     () => [
@@ -106,18 +106,65 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     return Array.isArray(arr) ? arr.map(String).join(",") : "";
   }, [payload.kategori_vendor_id]);
 
-  const mergeAndEmit = React.useCallback(
+  const toGroupArray = React.useCallback(
     (m: RowSD[], p: RowSD[], t: RowSD[]) => {
-      const merged = [...m, ...p, ...t].filter((r) => (r.sumber ?? "").trim());
-      setSumberDetail(merged);
-      set_sumber_daya(merged.map((r) => r.sumber.trim()).join(","));
+      const group = {
+        material: m
+          .filter((r) => (r.sumber ?? "").trim())
+          .map((r) => ({
+            nama: r.sumber.trim(),
+            spesifikasi: (r.spesifikasi ?? "").trim(),
+          })),
+        peralatan: p
+          .filter((r) => (r.sumber ?? "").trim())
+          .map((r) => ({
+            nama: r.sumber.trim(),
+            spesifikasi: (r.spesifikasi ?? "").trim(),
+          })),
+        tenaga_kerja: t
+          .filter((r) => (r.sumber ?? "").trim())
+          .map((r) => ({
+            nama: r.sumber.trim(),
+            spesifikasi: (r.spesifikasi ?? "").trim(),
+          })),
+      };
+      return [group];
     },
-    [setSumberDetail, set_sumber_daya]
+    []
   );
 
   React.useEffect(() => {
-    mergeAndEmit(sumberMaterial, sumberPeralatan, sumberTenaga);
-  }, [sumberMaterial, sumberPeralatan, sumberTenaga, mergeAndEmit]);
+    set_sumber_daya(
+      toGroupArray(sumberMaterial, sumberPeralatan, sumberTenaga)
+    );
+  }, [
+    sumberMaterial,
+    sumberPeralatan,
+    sumberTenaga,
+    set_sumber_daya,
+    toGroupArray,
+  ]);
+
+  const hydratedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    const groups = Array.isArray(payload.sumber_daya)
+      ? payload.sumber_daya
+      : [];
+    const m = groups
+      .flatMap((g) => g.material ?? [])
+      .map((i) => ({ sumber: i.nama, spesifikasi: i.spesifikasi }));
+    const p = groups
+      .flatMap((g) => g.peralatan ?? [])
+      .map((i) => ({ sumber: i.nama, spesifikasi: i.spesifikasi }));
+    const t = groups
+      .flatMap((g) => g.tenaga_kerja ?? [])
+      .map((i) => ({ sumber: i.nama, spesifikasi: i.spesifikasi }));
+    setSumberMaterial(m);
+    setSumberPeralatan(p);
+    setSumberTenaga(t);
+  }, [payload.sumber_daya]);
 
   const provOpts = React.useMemo(
     () => toUiOptions(provinsiOptions),
@@ -129,10 +176,41 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     [kategoriOptions]
   );
 
+  const IDX_TO_TYPE = ["1", "2", "3"] as const;
+  const typeEnabled = (idx: 0 | 1 | 2) =>
+    selectedTypes.includes(IDX_TO_TYPE[idx]);
+  const visibleIdxs = (
+    selectedTypes.length
+      ? [0, 1, 2].filter((i) => typeEnabled(i as 0 | 1 | 2))
+      : [0, 1, 2]
+  ) as (0 | 1 | 2)[];
+  const tabDefs = [
+    { label: "Material" },
+    { label: "Peralatan" },
+    { label: "Tenaga Kerja" },
+  ] as const;
+  const tabsForUI = visibleIdxs.map((i) => ({
+    label: tabDefs[i].label,
+    content: null,
+  }));
+  const uiIndexFromActual = (i: 0 | 1 | 2) =>
+    Math.max(0, visibleIdxs.indexOf(i));
+  const actualIndexFromUI = (ui: number) =>
+    visibleIdxs[Math.max(0, Math.min(ui, visibleIdxs.length - 1))];
+
+  React.useEffect(() => {
+    if (!visibleIdxs.includes(activeTab)) setActiveTab(visibleIdxs[0] ?? 0);
+  }, [selectedTypes]);
+
   const onSave = async () => {
     try {
-      if (logoFile) setLogoState("processing");
-      if (dokFile) setDokState("processing");
+      setIsSaving(true);
+
+      const sumberArray = toGroupArray(
+        sumberMaterial,
+        sumberPeralatan,
+        sumberTenaga
+      );
 
       const { logo_url, dok_pendukung_url, ...rest } = payload as Record<
         string,
@@ -140,22 +218,23 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
       >;
       const cleanPayload = {
         ...rest,
+        sumber_daya: sumberArray,
         jenis_vendor: selectedTypes,
-        sumber_daya_detail: JSON.stringify(sumberDetail),
       };
 
-      const res = await saveVendor(
-        cleanPayload as Parameters<typeof saveVendor>[0],
-        { logo: logoFile, dokumen: dokFile }
-      );
+      // Debug payload
+      console.log("Payload yang dikirim:", cleanPayload);
 
-      setLogoState(logoFile ? "done" : "default");
-      setDokState(dokFile ? "done" : "default");
+      await saveVendor(cleanPayload as Parameters<typeof saveVendor>[0], {
+        logo: logoFile,
+        dokumen: dokFile,
+      });
 
-      show(
-        (res as { message?: string })?.message || "Input vendor berhasil!",
-        "success"
-      );
+      // Biarkan FileInput tetap "default"; indikator cukup lewat tombol
+      setLogoState("default");
+      setDokState("default");
+
+      show("Input vendor berhasil!", "success");
       onNext?.();
     } catch (e: unknown) {
       setLogoState("default");
@@ -167,6 +246,8 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
         (e instanceof Error ? e.message : undefined) ||
         "Data gagal disimpan.";
       show(msg, "error");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -179,31 +260,20 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     setDokState("default");
   };
 
-  const tabDefs = [
-    { label: "Material" },
-    { label: "Peralatan" },
-    { label: "Tenaga Kerja" },
-  ] as const;
-
-  const handleAddRow = () => {
-    if (activeTab === 0) materialRef.current?.addRow();
-    else if (activeTab === 1) peralatanRef.current?.addRow();
-    else tenagaRef.current?.addRow();
-  };
-
-  const currentFilters = filtersByTab[activeTab] ?? initialFilters;
+  const currentFilters =
+    filtersByTab[uiIndexFromActual(activeTab)] ?? initialFilters;
 
   const setCurrentQuery = (v: string) => {
     setQueryByTab((prev) => {
       const next = [...prev];
-      next[activeTab] = v;
+      next[uiIndexFromActual(activeTab)] = v;
       return next;
     });
   };
   const setCurrentFilters = (v: FilterOption[]) => {
     setFiltersByTab((prev) => {
       const next = [...prev];
-      next[activeTab] = v;
+      next[uiIndexFromActual(activeTab)] = v;
       return next;
     });
   };
@@ -223,6 +293,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               isRequired
               value={payload.nama_vendor}
               onChange={(e) => set_nama_vendor(e.target.value)}
+              disabled={isSaving}
             />
 
             <div>
@@ -233,18 +304,21 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
                   checked={selectedTypes.includes("1")}
                   onChange={() => toggleJenis("1")}
                   shape="rounded-square"
+                  disabled={isSaving}
                 />
                 <Checkbox
                   label="Peralatan"
                   checked={selectedTypes.includes("2")}
                   onChange={() => toggleJenis("2")}
                   shape="rounded-square"
+                  disabled={isSaving}
                 />
                 <Checkbox
                   label="Tenaga Kerja"
                   checked={selectedTypes.includes("3")}
                   onChange={() => toggleJenis("3")}
                   shape="rounded-square"
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -259,75 +333,85 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               options={kategoriOpts}
               placeholder="Pilih kategori vendor/perusahaan"
               required
+              disabled={isSaving}
             />
 
             <div>
               <p className="text-B2">Sumber daya yang dimiliki</p>
 
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <Tabs
-                    tabs={tabDefs.map((t) => ({
-                      label: t.label,
-                      content: null,
-                    }))}
-                    tabListSx={{
-                      bgcolor: "var(--color-surface-light-background)",
-                    }}
-                    value={activeTab}
-                    onChange={(i: number) => setActiveTab(i as 0 | 1 | 2)}
-                  />
-                </div>
-                <div className="mt-1">
-                  <Button
-                    variant="solid_blue"
-                    size="small"
-                    onClick={handleAddRow}>
-                    Tambah Baris
-                  </Button>
-                </div>
-              </div>
+              {selectedTypes.length > 0 && (
+                <>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Tabs
+                        tabs={tabsForUI}
+                        tabListSx={{
+                          bgcolor: "var(--color-surface-light-background)",
+                        }}
+                        value={uiIndexFromActual(activeTab)}
+                        onChange={(uiIdx: number) =>
+                          setActiveTab(actualIndexFromUI(uiIdx))
+                        }
+                      />
+                    </div>
+                    <div className="mt-1">
+                      <Button
+                        variant="solid_blue"
+                        size="small"
+                        onClick={() => {
+                          const i = activeTab;
+                          if (i === 0) materialRef.current?.addRow();
+                          else if (i === 1) peralatanRef.current?.addRow();
+                          else tenagaRef.current?.addRow();
+                        }}
+                        disabled={isSaving}>
+                        Tambah Baris
+                      </Button>
+                    </div>
+                  </div>
 
-              <div className="mt-1">
-                <SearchBox
-                  placeholder="Cari sumber daya atau spesifikasi…"
-                  onSearch={setCurrentQuery}
-                  width="100%"
-                  debounceDelay={200}
-                  withFilter
-                  filterOptions={currentFilters}
-                  onFilterClick={setCurrentFilters}
-                  onApplyFilters={setCurrentFilters}
-                />
-              </div>
+                  <div className="mt-1">
+                    <SearchBox
+                      placeholder="Cari sumber daya atau spesifikasi…"
+                      onSearch={setCurrentQuery}
+                      width="100%"
+                      debounceDelay={200}
+                      withFilter
+                      filterOptions={currentFilters}
+                      onFilterClick={setCurrentFilters}
+                      onApplyFilters={setCurrentFilters}
+                    />
+                  </div>
 
-              <div className="mt-1">
-                {activeTab === 0 && (
-                  <SumberDayaTable
-                    ref={materialRef}
-                    initialCSV={payload.sumber_daya}
-                    onRowsChange={setSumberMaterial}
-                    externalQuery={queryByTab[0]}
-                    externalFilters={filtersByTab[0]}
-                  />
-                )}
-                {activeTab === 1 && (
-                  <SumberDayaTable
-                    ref={peralatanRef}
-                    onRowsChange={setSumberPeralatan}
-                    externalQuery={queryByTab[1]}
-                    externalFilters={filtersByTab[1]}
-                  />
-                )}
-                {activeTab === 2 && (
-                  <SumberDayaTable
-                    ref={tenagaRef}
-                    onRowsChange={setSumberTenaga}
-                    externalQuery={queryByTab[2]}
-                    externalFilters={filtersByTab[2]}
-                  />
-                )}
-              </div>
+                  <div
+                    className={activeTab === 0 ? "block mt-1" : "hidden mt-1"}>
+                    <SumberDayaTable
+                      ref={materialRef}
+                      onRowsChange={setSumberMaterial}
+                      externalQuery={queryByTab[uiIndexFromActual(0)]}
+                      externalFilters={filtersByTab[uiIndexFromActual(0)]}
+                    />
+                  </div>
+                  <div
+                    className={activeTab === 1 ? "block mt-1" : "hidden mt-1"}>
+                    <SumberDayaTable
+                      ref={peralatanRef}
+                      onRowsChange={setSumberPeralatan}
+                      externalQuery={queryByTab[uiIndexFromActual(1)]}
+                      externalFilters={filtersByTab[uiIndexFromActual(1)]}
+                    />
+                  </div>
+                  <div
+                    className={activeTab === 2 ? "block mt-1" : "hidden mt-1"}>
+                    <SumberDayaTable
+                      ref={tenagaRef}
+                      onRowsChange={setSumberTenaga}
+                      externalQuery={queryByTab[uiIndexFromActual(2)]}
+                      externalFilters={filtersByTab[uiIndexFromActual(2)]}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <TextInput
@@ -336,6 +420,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               isRequired
               value={payload.alamat}
               onChange={(e) => set_alamat(e.target.value)}
+              disabled={isSaving}
             />
 
             <div className="flex gap-6">
@@ -345,6 +430,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
                 isRequired
                 value={payload.no_telepon}
                 onChange={(e) => set_no_telepon(e.target.value)}
+                disabled={isSaving}
               />
               <TextInput
                 label="Nomor HP"
@@ -352,6 +438,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
                 isRequired
                 value={payload.no_hp}
                 onChange={(e) => set_no_hp(e.target.value)}
+                disabled={isSaving}
               />
             </div>
 
@@ -361,6 +448,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               isRequired
               value={payload.nama_pic}
               onChange={(e) => set_nama_pic(e.target.value)}
+              disabled={isSaving}
             />
 
             <div className="flex gap-6">
@@ -374,6 +462,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
                 options={provOpts}
                 placeholder="Pilih Provinsi"
                 required
+                disabled={isSaving}
               />
               <MUISelect
                 label="Pilih Kota"
@@ -385,6 +474,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
                 options={kotaOpts}
                 placeholder="Pilih Kota"
                 required
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -393,19 +483,23 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
             <MapPicker
               center={defaultCenter}
               value={marker}
-              onChange={setMarker}
+              onChange={(m) => {
+                if (!isSaving) setMarker(m);
+              }}
             />
             <TextInput
               label="Koordinat"
               placeholder="Masukkan Koordinat"
               value={`${marker.lat}, ${marker.lng}`}
               onChange={(e) => {
+                if (isSaving) return;
                 const [lat, lng] = e.target.value
                   .split(",")
                   .map((n) => parseFloat(n.trim()));
                 if (!Number.isNaN(lat) && !Number.isNaN(lng))
                   setMarker({ lat, lng });
               }}
+              disabled={isSaving}
             />
 
             <FileInput
@@ -424,6 +518,7 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               onCancel={cancelLogo}
               selectedFile={logoFile}
               maxSizeMB={2}
+              disabled={isSaving}
             />
 
             <FileInput
@@ -442,15 +537,25 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
               onCancel={cancelDok}
               selectedFile={dokFile}
               maxSizeMB={2}
+              disabled={isSaving}
             />
           </div>
         </div>
 
-        <div className="flex flex-row justify-end space-x-4 mt-3 bg-solid_basic_neutral_100 px-6 py-6 rounded-[16px]">
-          <Button variant="outlined_yellow" size="medium" onClick={onBack}>
+        <div className="flex justify-end items-center gap-4 mt-3 bg-neutral-100 px-6 py-8 rounded-[16px]">
+          <Button
+            variant="outlined_yellow"
+            size="medium"
+            onClick={onBack}
+            disabled={isSaving}>
             Kembali
           </Button>
-          <Button variant="solid_blue" size="medium" onClick={onSave}>
+          <Button
+            variant="solid_blue"
+            size="medium"
+            onClick={onSave}
+            disabled={isSaving}
+            loading={isSaving}>
             Simpan & Lanjut
           </Button>
         </div>

@@ -9,9 +9,16 @@ import DataTableMui, { type ColumnDef } from "@components/ui/table";
 
 import type { VendorItem } from "../../../../types/perencanaan-data/perancangan-kuesioner";
 
+type PdfEditResult = {
+  url_kuisioner?: string;
+  file?: File | Blob;
+  meta?: Record<string, unknown>;
+};
+
 type Props = {
   vendors: VendorItem[];
-  onOpenModal: (id: number) => void;
+
+  onOpenModal: (id: number) => Promise<PdfEditResult | undefined>;
   onRemoveRow?: (id: number | string) => void;
   query?: string;
   filterKeys?: string[];
@@ -22,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 export default function VendorTable({
   vendors,
   onOpenModal,
-  // onRemoveRow: _onRemoveRow,
   query = "",
   filterKeys = [],
 }: Props) {
@@ -79,8 +85,8 @@ export default function VendorTable({
         <div className="flex items-center justify-center w-full">
           <Button
             variant={row.url_kuisioner ? "text_blue" : "solid_blue"}
-            label={row.url_kuisioner ? "Lihat PDF" : "Edit PDF"}
-            onClick={() => {
+            label={row.url_kuisioner ? "Lihat PDF" : "Sunting PDF"}
+            onClick={async () => {
               if (row.url_kuisioner) {
                 const w = window.open(
                   String(row.url_kuisioner),
@@ -88,8 +94,24 @@ export default function VendorTable({
                   "noopener,noreferrer"
                 );
                 if (w) w.opener = null;
-              } else {
-                onOpenModal(Number(row.id));
+                return;
+              }
+
+              try {
+                const result = await onOpenModal(Number(row.id));
+                console.log("Hasil sunting PDF:", result);
+
+                if (result?.url_kuisioner) {
+                  setRows((prev) =>
+                    prev.map((r) =>
+                      r.id === row.id
+                        ? { ...r, url_kuisioner: result.url_kuisioner }
+                        : r
+                    )
+                  );
+                }
+              } catch (err) {
+                console.error("Sunting PDF dibatalkan/bermasalah:", err);
               }
             }}
           />

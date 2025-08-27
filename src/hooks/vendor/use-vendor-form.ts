@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ProvinceOption, Option } from "../../types/vendor/location";
-import type { VendorPayload } from "../../types/vendor/vendor";
+import type { VendorPayload, SumberDayaGroup } from "../../types/vendor/vendor";
 import { fetchProvincesAndCities } from "@lib/api/vendor/locations";
 
 export function useVendorForm() {
@@ -14,7 +14,7 @@ export function useVendorForm() {
   const [alamat, set_alamat] = useState("");
   const [no_telepon, set_no_telepon] = useState("");
   const [no_hp, set_no_hp] = useState("");
-  const [sumber_daya, set_sumber_daya] = useState("");
+  const [sumber_daya, set_sumber_daya] = useState<SumberDayaGroup[]>([]);
   const [nama_pic, set_nama_pic] = useState("");
   const [provinsi_id, set_provinsi_id] = useState("");
   const [kota_id, set_kota_id] = useState("");
@@ -161,6 +161,8 @@ export function useVendorForm() {
     set_no_hp,
     set_sumber_daya,
     set_nama_pic,
+    set_provinsi_id,
+    set_kota_id,
     set_koordinat,
     set_logo_url,
     set_dok_pendukung_url,

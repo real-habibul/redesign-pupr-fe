@@ -14,11 +14,18 @@ import type {
   City,
   TenagaKerja,
 } from "../../../../types/perencanaan-data/identifikasi-kebutuhan";
-import Pagination from "@components/ui/pagination";
-import TenagaKerjaRow, { Option } from "./tenaga-kerja-row";
+import DataTableMui, { type ColumnDef } from "@components/ui/table";
+import TextInput from "@components/ui/text-input";
+import MUISelect from "@components/ui/select";
+import Button from "@components/ui/button";
+
 import {
   useTenagaStore,
   useTenagaOrder,
+  // aliasin biar cocok kalau penamaan di store beda
+  useTenagaField as useTKField,
+  useSetTenagaField as useTKSetField,
+  useRemoveTenagaRow as useTKRemoveRow,
 } from "@store/perencanaan-data/identifikasi-kebutuhan/tenaga-kerja-store";
 
 type SetFieldValue = (
@@ -34,6 +41,8 @@ type Props = {
   query: string;
   filterKeys: string[];
 };
+
+export type Option = { value: string; label: string };
 
 const TENAGA_PATH = "tenagaKerjas";
 
@@ -57,6 +66,124 @@ function useDebounced<T>(value: T, delay = 250) {
   return v;
 }
 
+/* =======================
+   Cell Components (pakai hooks di dalam komponen)
+======================= */
+function TextCell({
+  id,
+  field,
+  label,
+  placeholder,
+  required,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  field: "jenis_tenaga_kerja" | "satuan" | "jumlah_kebutuhan" | "kodefikasi";
+  label: string;
+  placeholder: string;
+  required?: boolean;
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = useTKSetField?.() ?? (() => {});
+  const value = useTKField?.(id, field);
+  return (
+    <TextInput
+      label={label}
+      value={String(value ?? "")}
+      onChange={(e) => setField(id, field, e.target.value)}
+      onBlur={() => onBlurSyncFormik(id, field)}
+      placeholder={placeholder}
+      isRequired={required}
+    />
+  );
+}
+
+function ProvCell({
+  id,
+  provOptions,
+  onBlurSyncFormik,
+  resetCity = true,
+}: {
+  id: string;
+  provOptions: Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+  resetCity?: boolean;
+}) {
+  const setField = useTKSetField?.() ?? (() => {});
+  const provincies_id = useTKField?.(id, "provincies_id");
+  return (
+    <MUISelect
+      label="Provinsi"
+      options={provOptions}
+      value={provincies_id ? String(provincies_id) : ""}
+      onChange={(val: string) => {
+        setField(id, "provincies_id", val);
+        if (resetCity) setField(id, "cities_id", "");
+        onBlurSyncFormik(id, "provincies_id");
+        onBlurSyncFormik(id, "cities_id");
+      }}
+      required
+      placeholder="Pilih Provinsi"
+    />
+  );
+}
+
+function CityCell({
+  id,
+  getCityOptions,
+  onBlurSyncFormik,
+}: {
+  id: string;
+  getCityOptions: (prov: string | number | "") => Option[];
+  onBlurSyncFormik: (id: string, key: string) => void;
+}) {
+  const setField = useTKSetField?.() ?? (() => {});
+  const provincies_id = useTKField?.(id, "provincies_id");
+  const cities_id = useTKField?.(id, "cities_id");
+
+  const normalizedProvId: string | number | "" =
+    typeof provincies_id === "string" || typeof provincies_id === "number"
+      ? provincies_id
+      : "";
+
+  const cityOptions = useMemo(
+    () => getCityOptions(normalizedProvId),
+    [getCityOptions, normalizedProvId]
+  );
+
+  return (
+    <MUISelect
+      key={`city-${id}-${String(provincies_id ?? "")}`}
+      label="Kota"
+      options={cityOptions}
+      value={cities_id ? String(cities_id) : ""}
+      onChange={(val: string) => {
+        setField(id, "cities_id", val);
+        onBlurSyncFormik(id, "cities_id");
+      }}
+      required
+      placeholder="Pilih Kota"
+    />
+  );
+}
+
+function AksiCell({ id }: { id: string }) {
+  const remove = useTKRemoveRow?.();
+  return (
+    <div className="text-center">
+      <Button
+        type="button"
+        variant="text_red"
+        label="Hapus"
+        onClick={() => remove?.(id)}
+      />
+    </div>
+  );
+}
+
+/* =======================
+          MAIN
+======================= */
 export default function TenagaKerjaForm({
   values,
   setFieldValue,
@@ -201,6 +328,7 @@ export default function TenagaKerjaForm({
 
   useEffect(() => {
     setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qLower, filterKeys]);
 
   const indexById = useMemo(() => {
@@ -222,58 +350,119 @@ export default function TenagaKerjaForm({
     [indexById, setFieldValue]
   );
 
+  // siapkan data untuk DataTableMui
+  type RowData = { id: string };
+  const data: RowData[] = useMemo(
+    () => visibleIds.map((id) => ({ id })),
+    [visibleIds]
+  );
+
+  const columns: ColumnDef<RowData>[] = useMemo(
+    () => [
+      {
+        key: "jenis_tenaga_kerja",
+        header: "Jenis Tenaga Kerja",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="jenis_tenaga_kerja"
+            label="Jenis Tenaga Kerja"
+            placeholder="Masukkan jenis tenaga kerja"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "satuan",
+        header: "Satuan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="satuan"
+            label="Satuan"
+            placeholder="Masukkan satuan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "jumlah_kebutuhan",
+        header: "Jumlah Kebutuhan",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="jumlah_kebutuhan"
+            label="Jumlah Kebutuhan"
+            placeholder="Masukkan jumlah kebutuhan"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "kodefikasi",
+        header: "Kodefikasi",
+        cell: (row) => (
+          <TextCell
+            id={row.id}
+            field="kodefikasi"
+            label="Kodefikasi"
+            placeholder="Masukkan kodefikasi"
+            required
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "provincies_id",
+        header: "Provinsi",
+        cell: (row) => (
+          <ProvCell
+            id={row.id}
+            provOptions={provOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "cities_id",
+        header: "Kota",
+        cell: (row) => (
+          <CityCell
+            id={row.id}
+            getCityOptions={getCityOptions}
+            onBlurSyncFormik={onBlurSyncFormik}
+          />
+        ),
+      },
+      {
+        key: "aksi",
+        header: "Aksi",
+        className: "text-center",
+        cell: (row) => <AksiCell id={row.id} />,
+      },
+    ],
+    [onBlurSyncFormik, provOptions, getCityOptions]
+  );
+
   return (
     <div className="rounded-[16px] overflow-visible">
-      <div className="rounded-[16px] border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full min-w-max">
-            <thead>
-              <tr className="bg-solid_basic_blue_100 text-left text-emphasis_light_on_surface_high uppercase tracking-wider">
-                <th className="px-3 py-6 text-base font-normal">No</th>
-                {[
-                  "Jenis Tenaga Kerja",
-                  "Satuan",
-                  "Jumlah Kebutuhan",
-                  "Kodefikasi",
-                  "Provinsi",
-                  "Kota",
-                  "Aksi",
-                ].map((h) => (
-                  <th key={h} className="px-3 py-6 text-base font-normal">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-surface_light_background">
-              {visibleIds.map((id, i) => (
-                <TenagaKerjaRow
-                  key={id}
-                  id={id}
-                  rowNumber={start + i + 1}
-                  provOptions={provOptions}
-                  getCityOptions={getCityOptions}
-                  onBlurSyncFormik={onBlurSyncFormik}
-                />
-              ))}
-              {visibleIds.length === 0 && (
-                <tr>
-                  <td
-                    className="px-3 py-6 text-center text-emphasis_light_on_surface_medium"
-                    colSpan={12}>
-                    Data tidak ditemukan
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <Pagination
-        currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        totalData={totalFiltered}
-        onPageChange={handlePageChange}
+      <DataTableMui
+        columns={columns}
+        data={data}
+        emptyMessage="Data tidak ditemukan"
+        striped
+        stickyHeader
+        tableClassName="min-w-max"
+        headerRowClassName="bg-solid_basic_blue_100 text-emphasis_light_on_surface_high"
+        pagination={{
+          currentPage,
+          itemsPerPage,
+          total: totalFiltered,
+          onPageChange: handlePageChange,
+        }}
       />
     </div>
   );
