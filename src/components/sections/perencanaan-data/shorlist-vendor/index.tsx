@@ -262,6 +262,11 @@ export default function ShortlistSection() {
               onFilterClick={onFilterClick}
               className="h-12 w-full md:w-[320px]"
             />
+            <Button
+              variant="outlined_yellow"
+              label="Input Data Vendor"
+              onClick={() => (window.location.href = "/input-vendor")}
+            />
           </div>
 
           <Formik<FormValues>
