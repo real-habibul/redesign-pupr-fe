@@ -35,7 +35,11 @@ const ManualForm: React.FC<ManualFormProps> = ({
   const { submitManual } = useInformasiUmum();
 
   const selectOptions = React.useMemo(
-    () => balaiOptions.map((o) => ({ label: o.label, value: String(o.value) })),
+    () =>
+      (balaiOptions ?? []).map((o) => ({
+        label: o.label,
+        value: String(o.value),
+      })),
     [balaiOptions]
   );
 
@@ -87,7 +91,9 @@ const ManualForm: React.FC<ManualFormProps> = ({
                         );
                         form.setFieldValue(
                           field.name,
-                          found ? { label: found.label, value: val } : null
+                          found
+                            ? { label: found.label, value: Number(found.value) }
+                            : null
                         );
                       }}
                       options={selectOptions}

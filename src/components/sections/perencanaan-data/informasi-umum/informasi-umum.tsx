@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Stepper from "@components/ui/stepper";
 import Tabs from "@components/ui/tabs";
-import SipastiForm from "@components/features/perencanaan-data/informasi-umum/sipasti-form";
-import ManualForm from "@components/features/perencanaan-data/informasi-umum/manual-form";
-import manualstore from "@store/perencanaan-data/informasi-umum/store";
+import SipastiForm from "@components/sections/perencanaan-data/informasi-umum/sipasti-form";
+import ManualForm from "@components/sections/perencanaan-data/informasi-umum/manual-form";
+import useInformasiUmumStore from "@store/perencanaan-data/informasi-umum/store";
 import { useInformasiUmum } from "@hooks/perencanaan-data/use-informasi-umum";
-// import { SubmitType } from "@types/perencanaan-data/informasi-umum"; // pakai kalau perlu submit
 
 type TabItem = { label: string; content: React.ReactNode };
 
-const NUMBER_OF_STEPS = 4;
+const NUMBER_OF_STEPS = 4 as const;
 const STEP_LABELS = [
   "Informasi Umum",
   "Identifikasi Kebutuhan",
@@ -21,11 +21,20 @@ const STEP_LABELS = [
 
 export default function InformasiUmum() {
   const [currentStep, setCurrentStep] = useState(0);
+  const searchParams = useSearchParams();
 
-  const { initialValueManual } = manualstore();
-  const { balaiOptions } = useInformasiUmum();
+  const { initialValueManual, balaiOptions } = useInformasiUmumStore();
+  const { fetchInformasiUmum } = useInformasiUmum();
 
   useEffect(() => setCurrentStep(0), []);
+
+  useEffect(() => {
+    const fromIdent = searchParams.get("fromidentifikasi-kebutuhan") === "true";
+    if (!fromIdent) return;
+    const id = localStorage.getItem("informasi_umum_id");
+    if (!id) return;
+    void fetchInformasiUmum(id);
+  }, [searchParams, fetchInformasiUmum]);
 
   const TAB_ITEMS: TabItem[] = [
     { label: "SIPASTI", content: <SipastiForm hide={false} /> },

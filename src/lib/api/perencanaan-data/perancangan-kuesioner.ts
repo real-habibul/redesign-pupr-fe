@@ -22,16 +22,9 @@ export async function fetchPerencanaanData(informasiUmumId: string) {
   }
 }
 
-export async function fetchVendorDetail(
-  shortlistVendorId: ID,
-  informasiUmumId: string
-) {
-  console.log("[API] fetchVendorDetail:start", {
-    shortlistVendorId,
-    informasiUmumId,
-  });
-  if (shortlistVendorId == null)
-    throw new Error("shortlistVendorId is required");
+export async function fetchVendorDetail(id: ID, informasiUmumId: string) {
+  console.log("[API] fetchVendorDetail:start", { id, informasiUmumId });
+  if (id == null) throw new Error("id is required");
   if (!informasiUmumId) throw new Error("informasiUmumId is required");
   try {
     console.time("[API] fetchVendorDetail");
@@ -39,7 +32,7 @@ export async function fetchVendorDetail(
       `/perencanaan-data/shortlist-detail-identifikasi`,
       {
         params: {
-          shortlist_vendor_id: String(shortlistVendorId),
+          id: String(id),
           informasi_umum_id: String(informasiUmumId),
         },
       }
@@ -48,10 +41,7 @@ export async function fetchVendorDetail(
     console.log("[API] fetchVendorDetail:response", data);
     return data.data;
   } catch (e) {
-    console.error("[API] fetchVendorDetail:error", e, {
-      shortlistVendorId,
-      informasiUmumId,
-    });
+    console.error("[API] fetchVendorDetail:error", e, { id, informasiUmumId });
     throw e;
   }
 }

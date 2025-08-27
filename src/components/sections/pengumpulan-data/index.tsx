@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import Navbar from "@components/common/navigation-bar/navigation-bar";
 import Table from "@components/ui/table";
 import Pagination from "@components/ui/pagination";
 import SearchBox from "@components/ui/searchbox";
-import usePengumpulanInformasiStore from "@store/pengumpulanInformasiStore";
+import usePengumpulanInformasiStore from "@store/pengumpulan_data/store";
 import { columnsWithNumbering } from "./columns";
 import ActiveMenuPopup from "./active-menu-popup";
 import ModalDetail from "./modal-detail";
@@ -20,14 +19,13 @@ export default function InformasiPengumpulanData() {
     itemsPerPage,
     activeMenu,
     menuPosition,
-    setActiveMenu,
     setCurrentPage,
     fetchData,
     handleSearch,
-    handleFilterClick,
-    handleToggleMenu,
     setSelectedIdPaket,
     selectedIdPaket,
+    handleToggleMenu,
+    setActiveFilters,
   } = usePengumpulanInformasiStore();
 
   const { handleIframeResize } = useIframeResize(setIframeHeight);
@@ -62,40 +60,45 @@ export default function InformasiPengumpulanData() {
 
   return (
     <div className="p-8">
-      <Navbar />
       <div className="space-y-3">
         <div className="flex flex-row justify-between items-center mt-8 mb-7">
           <h1 className="text-H3 font-bold">
             Informasi Tahap Pengumpulan Data
           </h1>
+
           <SearchBox
             placeholder="Cari Data..."
             onSearch={handleSearch}
             withFilter
+            debounceDelay={200}
             filterOptions={[
-              { label: "Nama Paket", accessor: "nama_paket", checked: false },
-              { label: "Nama Balai", accessor: "nama_balai", checked: false },
-              { label: "Nama PPK", accessor: "nama_ppk", checked: false },
-              { label: "Jabatan PPK", accessor: "jabatan_ppk", checked: false },
-              { label: "Kode RUP", accessor: "kode_rup", checked: false },
-              { label: "Status", accessor: "status", checked: false },
+              { label: "Nama Paket", value: "nama_paket", checked: false },
+              { label: "Nama Balai", value: "nama_balai", checked: false },
+              { label: "Nama PPK", value: "nama_ppk", checked: false },
+              { label: "Jabatan PPK", value: "jabatan_ppk", checked: false },
+              { label: "Kode RUP", value: "kode_rup", checked: false },
+              { label: "Status", value: "status", checked: false },
             ]}
-            onFilterClick={handleFilterClick}
+            onApplyFilters={(filters) =>
+              setActiveFilters(
+                filters
+                  .filter((f) => f.checked && !!f.value)
+                  .map((f) => f.value as any)
+              )
+            }
           />
         </div>
+
         <Table
           columns={columnsWithNumbering(handleToggleMenu, setSelectedIdPaket)}
           data={paginatedData}
-          currentPage={currentPage}
-          itemsPerPage={itemsPerPage}
         />
+
         {tableData.length === 0 && (
-          <div className="text-center mt-4 text-B1 text-emphasis-on_surface-medium">
-            <span>: (</span>
-            <p className="py-6">Tidak ada data tersedia</p>
-          </div>
+          <div className="text-center mt-4 text-B1 text-emphasis-on_surface-medium"></div>
         )}
       </div>
+
       <Pagination
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}

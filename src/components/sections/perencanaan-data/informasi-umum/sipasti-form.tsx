@@ -4,7 +4,6 @@ import * as React from "react";
 import { Field, Form, Formik, FieldProps, FormikHelpers } from "formik";
 import TextInput from "@components/ui/text-input";
 import Button from "@components/ui/button";
-// import Store from "@store/perencanaan-data/informasi-umum/store";
 
 type FormValues = {
   kodeRup: string;

@@ -194,9 +194,9 @@ export default function Identifikasi_Kebutuhan_Form() {
     })();
   }, [setProvincesOptions, setInitialValues, show]);
 
-  const navigateToTahap1 = () => {
+  const navigateToInformasiUmum = () => {
     router.push(
-      "/perencanaan_data/informasi-umum?fromidentifikasi-kebutuhan=true"
+      "/perencanaan-data/informasi-umum?fromidentifikasi-kebutuhan=true"
     );
   };
 
@@ -495,7 +495,7 @@ export default function Identifikasi_Kebutuhan_Form() {
                   variant="outlined_yellow"
                   fullWidth={false}
                   label="Kembali"
-                  onClick={navigateToTahap1}
+                  onClick={navigateToInformasiUmum}
                 />
                 <Button
                   type="submit"

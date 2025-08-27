@@ -15,7 +15,7 @@ export const NAV_LINKS: LinkItem[] = [
   // },
 
   {
-    href: "/pengumpulan-data/informasi-tahap-pengumpulan",
+    href: "/pengumpulan-data/",
     label: "Pengumpulan Data",
     activePath: "/pengumpulan-data",
     roles: [],
