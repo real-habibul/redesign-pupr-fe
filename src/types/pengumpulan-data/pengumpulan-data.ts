@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import * as React from "react";
 
 export type PengumpulanRow = {
   id: string;
@@ -10,12 +10,24 @@ export type PengumpulanRow = {
   status: string;
 };
 
-export type ColumnDef<Row = any> = {
+export type MenuPosition = {
+  top: number;
+  left: number;
+  alignRight: boolean;
+};
+
+export type ColumnType = "text" | "iconButtonWithEvent";
+
+export type Accessor<Row> = keyof Row | string | ((row: Row) => unknown);
+
+export type ColumnDef<Row extends Record<string, unknown> = PengumpulanRow> = {
   key: string;
   header: string;
-  accessor: keyof Row | string;
-  type: "text" | "iconButtonWithEvent";
+  accessor: Accessor<Row>;
+  type: ColumnType;
   width?: string | number;
-  icon?: ComponentType<any>;
-  onClick?: (row: Row, event: MouseEvent) => void;
+
+  icon?: React.ReactNode | React.ComponentType;
+
+  onClick?: (row: Row, event: React.MouseEvent<HTMLElement>) => void;
 };

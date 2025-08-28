@@ -1,3 +1,5 @@
+"use client";
+
 import axios, {
   AxiosError,
   AxiosHeaders,
@@ -6,6 +8,8 @@ import axios, {
 } from "axios";
 import { API_BASE_URL } from "@constants/endpoints";
 import { emitAlert } from "@components/ui/alert-event";
+
+const ENABLE_HTTP_LOG = process.env.NODE_ENV !== "production";
 
 function ensureProtocol(url: string) {
   if (!/^https?:\/\//i.test(url)) return `https://${url}`;
@@ -142,15 +146,47 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     baseURL: overrideBaseURL,
   } as InternalAxiosRequestConfig;
 
+  if (ENABLE_HTTP_LOG) {
+    const fullUrl =
+      (next.baseURL ?? "") +
+      (next.url?.startsWith("/") ? next.url : `/${next.url ?? ""}`);
+    console.log(
+      "[HTTP] =>",
+      (next.method || "get").toUpperCase(),
+      fullUrl,
+      next.params ?? next.data ?? {}
+    );
+  }
+
   return next;
 });
 
 http.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    if (ENABLE_HTTP_LOG) {
+      console.log(
+        "[HTTP] <=",
+        r.status,
+        r.config?.url,
+        typeof r.data === "string" ? r.data.slice(0, 200) : r.data
+      );
+    }
+    return r;
+  },
   (err: unknown) => {
     if (axios.isAxiosError(err)) {
       const axErr = err as AxiosErrorWithFriendly<unknown>;
       axErr.friendlyMessage = mapFriendlyMessage(axErr);
+
+      if (ENABLE_HTTP_LOG) {
+        console.log(
+          "[HTTP] ERR",
+          axErr.response?.status,
+          axErr.config?.url,
+          axErr.response?.data
+        );
+      }
+
       const autoMsg = mapAutoAlertMessage(axErr);
       if (autoMsg) emitAlert(autoMsg, "error");
       return Promise.reject(axErr);
@@ -160,3 +196,4 @@ http.interceptors.response.use(
 );
 
 export const api = http;
+export default http;

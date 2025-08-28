@@ -1,34 +1,52 @@
 "use client";
 import { create } from "zustand";
+import type {
+  PengumpulanRow,
+  MenuPosition,
+} from "../../types/pengumpulan-data/pengumpulan-data";
+import {
+  getTableListPengumpulan,
+  generateLinkPengumpulan,
+} from "@lib/api/pengumpulan-data/pengumpulan";
 
 type PengumpulanInformasiState = {
-  tableData: any[];
-  masterData: any[];
+  tableData: PengumpulanRow[];
+  masterData: PengumpulanRow[];
   currentPage: number;
   itemsPerPage: number;
   activeMenu: string | null;
-  menuPosition: { top: number; left: number; alignRight: boolean };
+  menuPosition: MenuPosition;
   selectedIdPaket: string | null;
 
   urlKuisionerResult: string | null;
   dateExpired: string | null;
 
-  activeFilters: string[];
+  activeFilters: (keyof PengumpulanRow | string)[];
 
   setCurrentPage: (page: number) => void;
   setActiveMenu: (id: string | null) => void;
   setSelectedIdPaket: (id: string | null) => void;
 
-  setActiveFilters: (cols: string[]) => void;
+  setActiveFilters: (cols: (keyof PengumpulanRow | string)[]) => void;
 
   fetchData: () => Promise<void>;
   fetchVendor: (id: string) => Promise<void>;
   handleSearch: (q: string) => void;
   handleFilterClick: (field: string) => void;
-  handleToggleMenu: (id: string, e: MouseEvent, rowId: string) => void; // pakai MouseEvent
+  handleToggleMenu: (id: string, e: MouseEvent, rowId: string) => void;
 
-  openGenerateLinkModal: (id: string) => Promise<void>;
+  openGenerateLinkModal: (id: string | number) => Promise<void>;
+  resetLinkState: () => void;
 };
+
+const fallbackCols: (keyof PengumpulanRow)[] = [
+  "nama_paket",
+  "nama_balai",
+  "nama_ppk",
+  "jabatan_ppk",
+  "kode_rup",
+  "status",
+];
 
 const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
   (set, get) => ({
@@ -52,9 +70,8 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
     setActiveFilters: (cols) => set({ activeFilters: cols }),
 
     fetchData: async () => {
-      const res = await fetch("/api/pengumpulan-data/table-list-pengumpulan");
-      const data = await res.json();
-      set({ tableData: data, masterData: data });
+      const data = await getTableListPengumpulan();
+      set({ tableData: data, masterData: data, currentPage: 1 });
     },
 
     fetchVendor: async (id) => {
@@ -70,17 +87,10 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
         return;
       }
 
-      const fallbackCols = [
-        "nama_paket",
-        "nama_balai",
-        "nama_ppk",
-        "jabatan_ppk",
-        "kode_rup",
-        "status",
-      ];
-      const cols = activeFilters.length > 0 ? activeFilters : fallbackCols;
-
-      const filtered = masterData.filter((row: any) =>
+      const cols = (
+        activeFilters.length > 0 ? activeFilters : fallbackCols
+      ) as (keyof PengumpulanRow)[];
+      const filtered = masterData.filter((row) =>
         cols.some((k) =>
           String(row?.[k] ?? "")
             .toLowerCase()
@@ -92,7 +102,7 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
     },
 
     handleFilterClick: (field) => {
-      console.log("filter click (legacy):", field);
+      console.log("filter click:", field);
     },
 
     handleToggleMenu: (id, e) => {
@@ -100,7 +110,7 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
       set({
         activeMenu: id,
         menuPosition: {
-          top: rect.bottom,
+          top: rect.bottom + 8,
           left: rect.left,
           alignRight: rect.right > window.innerWidth / 2,
         },
@@ -108,13 +118,29 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
     },
 
     openGenerateLinkModal: async (id) => {
-      const res = await fetch(`/api/pengumpulan-data/generate-link?id=${id}`);
-      const data = await res.json();
-      set({
-        urlKuisionerResult: data.url,
-        dateExpired: data.expired_at,
-      });
+      console.log("[store] openGenerateLinkModal:start", { id });
+      try {
+        const data = await generateLinkPengumpulan(id);
+        console.log("[store] openGenerateLinkModal:ok", data);
+        set({
+          urlKuisionerResult: data.url,
+          dateExpired: data.expired_at,
+        });
+      } catch (e) {
+        console.error("[store] openGenerateLinkModal:error", e);
+        set({
+          urlKuisionerResult: null,
+          dateExpired: null,
+        });
+        throw e;
+      }
     },
+
+    resetLinkState: () =>
+      set({
+        urlKuisionerResult: null,
+        dateExpired: null,
+      }),
   })
 );
 

@@ -61,6 +61,23 @@ type PerencanaanDataResponse = {
   shortlist_vendor?: VendorItem[];
 };
 
+type VendorMaybeUrl = VendorItem & {
+  url_kuisioner?: string | null;
+  id?: number | string;
+};
+
+function hasUrlKuisioner(
+  obj: unknown
+): obj is { url_kuisioner?: string | null } {
+  return typeof obj === "object" && obj !== null && "url_kuisioner" in obj;
+}
+
+function getNumericId(v: { id?: number | string } | undefined): number | null {
+  if (!v || v.id == null) return null;
+  const n = typeof v.id === "string" ? Number(v.id) : v.id;
+  return Number.isFinite(n) ? n : null;
+}
+
 export default function Perancangan_Kuesioner_Section() {
   const [currentStep] = useState(3);
   const [info, setInfo] = useState<CommonInformation>({} as CommonInformation);
@@ -141,16 +158,24 @@ export default function Perancangan_Kuesioner_Section() {
         tenaga_kerja: payload.tenaga_kerja.map((id) => ({ id })),
       });
 
-      const refreshed = await fetchPerencanaanData(informasiUmumId as string);
-      const shortlist = Array.isArray((refreshed as any)?.shortlist_vendor)
-        ? (refreshed as any).shortlist_vendor
+      const refreshed = (await fetchPerencanaanData(
+        informasiUmumId as string
+      )) as PerencanaanDataResponse;
+
+      const shortlist = Array.isArray(refreshed.shortlist_vendor)
+        ? (refreshed.shortlist_vendor as VendorItem[])
         : [];
+
       setVendors(shortlist);
 
       const found = shortlist.find(
-        (v: any) => Number(v.id) === payload.id_vendor
-      );
-      const url = (found?.url_kuisioner ?? undefined) as string | undefined;
+        (v) => getNumericId(v as VendorMaybeUrl) === payload.id_vendor
+      ) as VendorMaybeUrl | undefined;
+
+      const url =
+        hasUrlKuisioner(found) && found?.url_kuisioner
+          ? String(found.url_kuisioner)
+          : undefined;
 
       resolverRef.current?.({ url_kuisioner: url });
       resolverRef.current = null;
