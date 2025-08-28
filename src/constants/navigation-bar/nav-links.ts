@@ -3,16 +3,19 @@ import type { LinkItem } from "../../types/navigation-bar/nav";
 export const NAV_LINKS: LinkItem[] = [
   { href: "/dashboard", label: "Beranda", roles: [] },
 
-  // {
-  //   href: "/perencanaan-data/informasi-umum",
-  //   label: "Perencanaan Data",
-  //   activePath: "/perencanaan-data",
-  //   roles: [],
-  //   children: [
-  //     { href: "/perencanaan-data/tahap1", label: "Buat Baru" },
-  //     { href: "/perencanaan-data/perencanaan-data-list", label: "Informasi Perencanaan Data" }
-  //   ]
-  // },
+  {
+    href: "/perencanaan-data/informasi-umum",
+    label: "Perencanaan Data",
+    activePath: "/perencanaan-data",
+    roles: [],
+    children: [
+      { href: "/perencanaan-data/informasi-umum", label: "Buat Baru" },
+      {
+        href: "/perencanaan-data/perencanaan-list",
+        label: "Informasi Perencanaan Data",
+      },
+    ],
+  },
 
   {
     href: "/pengumpulan-data/",
@@ -50,10 +53,10 @@ export const NAV_LINKS: LinkItem[] = [
 
   // { href: "/user-role/user-role", label: "Assign User", activePath: "/user-role", roles: [] }
 
-  {
-    href: "/perencanaan-data/informasi-umum",
-    label: "Perencanaan Data",
-    activePath: "/perencanaan-data/",
-    roles: [],
-  },
+  // {
+  //   href: "/perencanaan-data/informasi-umum",
+  //   label: "Perencanaan Data",
+  //   activePath: "/perencanaan-data/",
+  //   roles: [],
+  // },
 ];
