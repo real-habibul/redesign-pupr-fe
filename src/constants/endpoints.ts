@@ -15,4 +15,6 @@ export const ENDPOINTS = {
   storeShortlistVendor: "/perencanaan-data/store-shortlist-vendor",
   getDataVendor: (id: string | number) =>
     `/perencanaan-data/get-data-vendor/${id}`,
+
+  getPerencanaanList: "/perencanaan-data/table-list-prencanaan-data",
 } as const;

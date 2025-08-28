@@ -1,4 +1,4 @@
-import InformasiUmum from "@components/features/perencanaan-data/informasi-umum/informasi-umum";
+import InformasiUmum from "@components/sections/perencanaan-data/informasi-umum/informasi-umum";
 
 export default function Page() {
   return (

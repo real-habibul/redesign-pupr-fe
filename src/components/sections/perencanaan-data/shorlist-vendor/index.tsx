@@ -172,8 +172,8 @@ export default function ShortlistSection() {
     setFTen([]);
   };
 
-  const navigateToTahap2 = () => {
-    router.push("/perencanaan_data/tahap2?fromTahap3=true");
+  const navigateBackToIdentifikasi = () => {
+    router.push("/perencanaan-data/identifikasi-kebutuhan?fromTahap3=true");
   };
 
   const TabsContent = React.useMemo(
@@ -291,7 +291,9 @@ export default function ShortlistSection() {
               />
 
               <div className="flex flex-row justify-end items-center gap-4 bg-neutral-100 px-6 py-8 rounded-[16px]">
-                <Button variant="outlined_yellow" onClick={navigateToTahap2}>
+                <Button
+                  variant="outlined_yellow"
+                  onClick={navigateBackToIdentifikasi}>
                   Kembali
                 </Button>
                 <Button type="submit" variant="solid_blue">

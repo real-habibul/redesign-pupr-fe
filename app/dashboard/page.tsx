@@ -93,7 +93,7 @@ const topProducts = [
 
 export default function DataDashboard() {
   return (
-    <div className="min-h-screen  flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Data Dashboard</h1>

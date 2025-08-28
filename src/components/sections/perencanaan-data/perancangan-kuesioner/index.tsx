@@ -171,7 +171,7 @@ export default function Perancangan_Kuesioner_Section() {
   const handleFinalConfirm = async () => {
     if (!informasiUmumId) return;
     await savePerencanaanData(informasiUmumId);
-    window.location.href = "/perencanaan_data/perencanaan_data_list";
+    window.location.href = "/perencanaan-data/perencanaan-list";
   };
 
   const baseOptions = useMemo<SearchBoxFilter[]>(
@@ -285,7 +285,10 @@ export default function Perancangan_Kuesioner_Section() {
               open={confirmOpen}
               onClose={() => setConfirmOpen(false)}
               fullWidth
-              maxWidth="xs">
+              maxWidth="xs"
+              PaperProps={{
+                sx: { borderRadius: "16px" },
+              }}>
               <DialogTitle className="text-H5">Peringatan</DialogTitle>
               <DialogContent>
                 <p>Anda yakin ingin menyimpan?</p>

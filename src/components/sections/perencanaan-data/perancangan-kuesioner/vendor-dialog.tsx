@@ -59,6 +59,37 @@ export default function VendorDialog({
   const [qP, setQP] = useState("");
   const [qT, setQT] = useState("");
 
+  // === Dialog konfirmasi ===
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const selectedCount = useMemo(
+    () => ({
+      material: delMaterial.length,
+      peralatan: delPeralatan.length,
+      tenaga: delTenaga.length,
+      total: delMaterial.length + delPeralatan.length + delTenaga.length,
+    }),
+    [delMaterial, delPeralatan, delTenaga]
+  );
+
+  const handleClickSave = () => {
+    // selalu munculin konfirmasi
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmYes = () => {
+    if (!selectedVendor) return onClose();
+    onConfirm({
+      id_vendor: selectedVendor!,
+      material: delMaterial,
+      peralatan: delPeralatan,
+      tenaga_kerja: delTenaga,
+    });
+    setConfirmOpen(false);
+  };
+
+  const handleConfirmNo = () => setConfirmOpen(false);
+
   // ==== STABILKAN FILTER OPTIONS (fix loop) ====
   const materialFilterOptions = useMemo<FilterOption[]>(
     () => [
@@ -224,127 +255,161 @@ export default function VendorDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="lg"
-      PaperProps={{ sx: { borderRadius: "16px" } }}>
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          pr: 1,
-        }}>
-        <span className="text-H5">Shortlist MPK yang akan disurvei</span>
-        <IconButton onClick={onClose} aria-label="close">
-          <CloseCircle size="24" />
-        </IconButton>
-      </DialogTitle>
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth="lg"
+        PaperProps={{ sx: { borderRadius: "16px" } }}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            pr: 1,
+          }}>
+          <span className="text-H5">Shortlist MPK yang akan disurvei</span>
+          <IconButton onClick={onClose} aria-label="close">
+            <CloseCircle size="24" />
+          </IconButton>
+        </DialogTitle>
 
-      <DialogContent dividers sx={{ pt: 2 }}>
-        <Tabs
-          tabs={[
-            {
-              label: "Material",
-              content: (
-                <div className="mt-3 space-y-4">
-                  <SearchBox
-                    placeholder="Cari Material..."
-                    onSearch={setQM}
-                    withFilter
-                    filterOptions={materialFilterOptions}
-                  />
-                  <DataTableMui<MaterialItem>
-                    columns={materialCols}
-                    data={mats}
-                    striped
-                    pagination={{
-                      currentPage: pageM,
-                      itemsPerPage: ITEMS,
-                      total: mats.length,
-                      onPageChange: setPageM,
-                    }}
-                    selection={materialSelection}
-                  />
-                </div>
-              ),
-            },
-            {
-              label: "Peralatan",
-              content: (
-                <div className="mt-3 space-y-4">
-                  <SearchBox
-                    placeholder="Cari Peralatan..."
-                    onSearch={setQP}
-                    withFilter
-                    filterOptions={peralatanFilterOptions}
-                  />
-                  <DataTableMui<PeralatanItem>
-                    columns={peralatanCols}
-                    data={pers}
-                    striped
-                    pagination={{
-                      currentPage: pageP,
-                      itemsPerPage: ITEMS,
-                      total: pers.length,
-                      onPageChange: setPageP,
-                    }}
-                    selection={peralatanSelection}
-                  />
-                </div>
-              ),
-            },
-            {
-              label: "Tenaga Kerja",
-              content: (
-                <div className="mt-3 space-y-4">
-                  <SearchBox
-                    placeholder="Cari Tenaga Kerja..."
-                    onSearch={setQT}
-                    withFilter
-                    filterOptions={tenagaFilterOptions}
-                  />
-                  <DataTableMui<TenagaKerjaItem>
-                    columns={tenagaCols}
-                    data={tens}
-                    striped
-                    pagination={{
-                      currentPage: pageT,
-                      itemsPerPage: ITEMS,
-                      total: tens.length,
-                      onPageChange: setPageT,
-                    }}
-                    selection={tenagaSelection}
-                  />
-                </div>
-              ),
-            },
-          ]}
-        />
-      </DialogContent>
+        <DialogContent dividers sx={{ pt: 2 }}>
+          <Tabs
+            tabs={[
+              {
+                label: "Material",
+                content: (
+                  <div className="mt-3 space-y-4">
+                    <SearchBox
+                      placeholder="Cari Material..."
+                      onSearch={setQM}
+                      withFilter
+                      filterOptions={materialFilterOptions}
+                    />
+                    <DataTableMui<MaterialItem>
+                      columns={materialCols}
+                      data={mats}
+                      striped
+                      pagination={{
+                        currentPage: pageM,
+                        itemsPerPage: ITEMS,
+                        total: mats.length,
+                        onPageChange: setPageM,
+                      }}
+                      selection={materialSelection}
+                    />
+                  </div>
+                ),
+              },
+              {
+                label: "Peralatan",
+                content: (
+                  <div className="mt-3 space-y-4">
+                    <SearchBox
+                      placeholder="Cari Peralatan..."
+                      onSearch={setQP}
+                      withFilter
+                      filterOptions={peralatanFilterOptions}
+                    />
+                    <DataTableMui<PeralatanItem>
+                      columns={peralatanCols}
+                      data={pers}
+                      striped
+                      pagination={{
+                        currentPage: pageP,
+                        itemsPerPage: ITEMS,
+                        total: pers.length,
+                        onPageChange: setPageP,
+                      }}
+                      selection={peralatanSelection}
+                    />
+                  </div>
+                ),
+              },
+              {
+                label: "Tenaga Kerja",
+                content: (
+                  <div className="mt-3 space-y-4">
+                    <SearchBox
+                      placeholder="Cari Tenaga Kerja..."
+                      onSearch={setQT}
+                      withFilter
+                      filterOptions={tenagaFilterOptions}
+                    />
+                    <DataTableMui<TenagaKerjaItem>
+                      columns={tenagaCols}
+                      data={tens}
+                      striped
+                      pagination={{
+                        currentPage: pageT,
+                        itemsPerPage: ITEMS,
+                        total: tens.length,
+                        onPageChange: setPageT,
+                      }}
+                      selection={tenagaSelection}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <div className="flex flex-row justify-end gap-4 w-full">
-          <Button variant="outlined_yellow" onClick={onClose}>
-            Kembali
+        <DialogActions sx={{ p: 2 }}>
+          <div className="flex flex-row justify-end gap-4 w-full">
+            <Button variant="outlined_yellow" onClick={onClose}>
+              Kembali
+            </Button>
+            <Button variant="solid_blue" onClick={handleClickSave}>
+              Simpan & Lanjut
+            </Button>
+          </div>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog Konfirmasi */}
+      <Dialog
+        open={confirmOpen}
+        onClose={handleConfirmNo}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: "16px" } }}>
+        <DialogTitle sx={{ pr: 1 }}>Konfirmasi Penyimpanan</DialogTitle>
+        <DialogContent dividers>
+          <div className="space-y-2">
+            <p className="text-body">
+              Anda akan menyimpan pilihan berikut untuk vendor ini:
+            </p>
+            <ul className="list-disc pl-5">
+              <li>
+                Material dipilih: <b>{selectedCount.material}</b>
+              </li>
+              <li>
+                Peralatan dipilih: <b>{selectedCount.peralatan}</b>
+              </li>
+              <li>
+                Tenaga Kerja dipilih: <b>{selectedCount.tenaga}</b>
+              </li>
+            </ul>
+            {selectedCount.total === 0 && (
+              <p className="mt-2 italic opacity-80">
+                Catatan: Belum ada item yang dipilih.
+              </p>
+            )}
+            <p className="mt-2">Lanjutkan menyimpan?</p>
+          </div>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button variant="outlined_yellow" onClick={handleConfirmNo}>
+            Batal
           </Button>
-          <Button
-            variant="solid_blue"
-            onClick={() => {
-              if (!selectedVendor) return onClose();
-              onConfirm({
-                id_vendor: selectedVendor,
-                material: delMaterial,
-                peralatan: delPeralatan,
-                tenaga_kerja: delTenaga,
-              });
-            }}>
-            Simpan & Lanjut
+          <Button variant="solid_blue" onClick={handleConfirmYes}>
+            Ya, Simpan
           </Button>
-        </div>
-      </DialogActions>
-    </Dialog>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
