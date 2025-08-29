@@ -6,12 +6,6 @@ import TextInput from "@components/ui/text-input";
 import usePengumpulanInformasiStore from "@store/pengumpulan-data/store";
 import { useAlert } from "@components/ui/alert";
 
-type StoreShape = {
-  urlKuisionerResult: string | null;
-  dateExpired: string | null;
-  openGenerateLinkModal?: (id: string | number) => Promise<void>;
-};
-
 function extractToken(url?: string | null): string {
   if (!url) return "";
   try {
@@ -26,28 +20,26 @@ function extractToken(url?: string | null): string {
   }
 }
 
-const LinkKuesioner: React.FC = () => {
+type Props = {
+  shortlistId: number | string | null;
+};
+
+const LinkKuesioner: React.FC<Props> = ({ shortlistId }) => {
   const { show } = useAlert();
   const [loading, setLoading] = useState(false);
-
   const { urlKuisionerResult, dateExpired, openGenerateLinkModal } =
-    usePengumpulanInformasiStore() as unknown as StoreShape;
+    usePengumpulanInformasiStore();
 
   useEffect(() => {
-    const storedId =
-      typeof window !== "undefined"
-        ? localStorage.getItem("selectedIdLinkKuesioner")
-        : null;
+    console.log("[LinkKuesioner] shortlist_id =", shortlistId);
+  }, [shortlistId]);
 
-    console.log("[LinkKuesioner] storedId =", storedId);
-
-    if (storedId && typeof openGenerateLinkModal === "function") {
-      const num = Number(storedId);
-      const idToUse = Number.isFinite(num) ? num : storedId;
-      setLoading(true);
-      openGenerateLinkModal(idToUse).finally(() => setLoading(false));
-    }
-  }, [openGenerateLinkModal]);
+  useEffect(() => {
+    if (shortlistId == null || typeof openGenerateLinkModal !== "function")
+      return;
+    setLoading(true);
+    openGenerateLinkModal(shortlistId).finally(() => setLoading(false));
+  }, [shortlistId, openGenerateLinkModal]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const token = useMemo(
@@ -79,27 +71,21 @@ const LinkKuesioner: React.FC = () => {
             composedLink ||
             (loading ? "Sedang memuat link..." : "Link tidak ditemukan")
           }
-          onChange={() => {
-            /* read-only */
-          }}
+          onChange={() => {}}
           placeholder={loading ? "Memuat..." : "Link tidak ditemukan"}
-          disabled={true}
+          disabled
         />
-
         <button
           type="button"
           onClick={handleCopyLink}
           disabled={!composedLink || loading}
           aria-label="Salin link kuesioner"
-          className={`w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors 
-            hover:bg-solid_basic_blue_50 cursor-pointer border-2 border-surface_light_outline outline-none
-            focus:outline-solid_basic_blue_500 disabled:opacity-50 disabled:cursor-not-allowed`}>
+          className="w-[52px] h-[52px] rounded-full flex items-center justify-center transition-colors hover:bg-solid_basic_blue_50 cursor-pointer border-2 border-surface_light_outline outline-none focus:outline-solid_basic_blue_500 disabled:opacity-50 disabled:cursor-not-allowed">
           <span className="text-emphasis_light_on_surface_high">
             <ClipboardText size={24} color="currentColor" />
           </span>
         </button>
       </div>
-
       <div className="text-small text-solid_basic_red_500 mt-2">
         {dateExpired
           ? `Link berlaku hingga: ${dateExpired}`

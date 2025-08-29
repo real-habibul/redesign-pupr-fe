@@ -76,7 +76,7 @@ const SumberDayaTable = React.forwardRef<SumberDayaTableHandle, Props>(
         nonEmpty.map(({ sumber, spesifikasi }) => ({ sumber, spesifikasi }))
       );
       onCSVChange?.(toCSV(nonEmpty));
-    }, [rows]);
+    }, [rows, onRowsChange, onCSVChange]);
 
     const addRow = React.useCallback(() => {
       setRows((prev) => [

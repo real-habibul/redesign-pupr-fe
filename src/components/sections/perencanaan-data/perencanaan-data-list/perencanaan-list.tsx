@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import DataTableMui, { type ColumnDef } from "@components/ui/table";
 import Pagination from "@components/ui/pagination";
 import SearchBox from "@components/ui/searchbox";
-import { More } from "iconsax-react";
 import type { PerencanaanRow } from "../../../../types/perencanaan-data/perencanaan-list";
 import { getPerencanaanList } from "@lib/api/perencanaan-data/perencanaan-list";
 import { useFetch } from "@hooks/perencanaan-data/use-fetch";
@@ -24,8 +23,11 @@ const DEFAULT_FILTERS: SBFilter[] = [
 ];
 
 export default function PerencanaanDataList() {
-  const { data, error, loading } = useFetch(getPerencanaanList, []);
-  const allData = data ?? [];
+  const { data, error, loading } = useFetch(getPerencanaanList);
+  const allData = useMemo<PerencanaanRow[]>(
+    () => (Array.isArray(data) ? (data as PerencanaanRow[]) : []),
+    [data]
+  );
 
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedFields, setSelectedFields] = useState<

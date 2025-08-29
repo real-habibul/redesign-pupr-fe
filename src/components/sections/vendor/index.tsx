@@ -177,13 +177,19 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
   );
 
   const IDX_TO_TYPE = ["1", "2", "3"] as const;
-  const typeEnabled = (idx: 0 | 1 | 2) =>
-    selectedTypes.includes(IDX_TO_TYPE[idx]);
-  const visibleIdxs = (
-    selectedTypes.length
-      ? [0, 1, 2].filter((i) => typeEnabled(i as 0 | 1 | 2))
-      : [0, 1, 2]
-  ) as (0 | 1 | 2)[];
+  const typeEnabled = React.useCallback(
+    (idx: 0 | 1 | 2) => selectedTypes.includes(IDX_TO_TYPE[idx]),
+    [selectedTypes] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const visibleIdxs = React.useMemo(
+    () =>
+      (selectedTypes.length
+        ? [0, 1, 2].filter((i) => typeEnabled(i as 0 | 1 | 2))
+        : [0, 1, 2]) as (0 | 1 | 2)[],
+    [selectedTypes, typeEnabled]
+  );
+
   const tabDefs = [
     { label: "Material" },
     { label: "Peralatan" },
@@ -199,8 +205,10 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
     visibleIdxs[Math.max(0, Math.min(ui, visibleIdxs.length - 1))];
 
   React.useEffect(() => {
-    if (!visibleIdxs.includes(activeTab)) setActiveTab(visibleIdxs[0] ?? 0);
-  }, [selectedTypes]);
+    if (!visibleIdxs.includes(activeTab)) {
+      setActiveTab(visibleIdxs[0] ?? 0);
+    }
+  }, [selectedTypes, visibleIdxs, activeTab]);
 
   const onSave = async () => {
     try {
@@ -212,17 +220,17 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
         sumberTenaga
       );
 
-      const { logo_url, dok_pendukung_url, ...rest } = payload as Record<
+      const { /* logo_url, dok_pendukung_url, */ ...rest } = payload as Record<
         string,
         unknown
       >;
+
       const cleanPayload = {
         ...rest,
         sumber_daya: sumberArray,
         jenis_vendor: selectedTypes,
       };
 
-      // Debug payload
       console.log("Payload yang dikirim:", cleanPayload);
 
       await saveVendor(cleanPayload as Parameters<typeof saveVendor>[0], {
@@ -230,7 +238,6 @@ export default function InputVendorSection({ onNext, onBack }: Props) {
         dokumen: dokFile,
       });
 
-      // Biarkan FileInput tetap "default"; indikator cukup lewat tombol
       setLogoState("default");
       setDokState("default");
 

@@ -7,6 +7,7 @@ import type {
 import {
   getTableListPengumpulan,
   generateLinkPengumpulan,
+  type ShortlistId,
 } from "@lib/api/pengumpulan-data/pengumpulan";
 
 type PengumpulanInformasiState = {
@@ -35,7 +36,7 @@ type PengumpulanInformasiState = {
   handleFilterClick: (field: string) => void;
   handleToggleMenu: (id: string, e: MouseEvent, rowId: string) => void;
 
-  openGenerateLinkModal: (id: string | number) => Promise<void>;
+  openGenerateLinkModal: (id: ShortlistId) => Promise<void>;
   resetLinkState: () => void;
 };
 
@@ -81,12 +82,10 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
     handleSearch: (q) => {
       const { masterData, activeFilters } = get();
       const term = q.trim().toLowerCase();
-
       if (!term) {
         set({ tableData: masterData, currentPage: 1 });
         return;
       }
-
       const cols = (
         activeFilters.length > 0 ? activeFilters : fallbackCols
       ) as (keyof PengumpulanRow)[];
@@ -97,7 +96,6 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
             .includes(term)
         )
       );
-
       set({ tableData: filtered, currentPage: 1 });
     },
 
@@ -122,25 +120,15 @@ const usePengumpulanInformasiStore = create<PengumpulanInformasiState>(
       try {
         const data = await generateLinkPengumpulan(id);
         console.log("[store] openGenerateLinkModal:ok", data);
-        set({
-          urlKuisionerResult: data.url,
-          dateExpired: data.expired_at,
-        });
+        set({ urlKuisionerResult: data.url, dateExpired: data.expired_at });
       } catch (e) {
         console.error("[store] openGenerateLinkModal:error", e);
-        set({
-          urlKuisionerResult: null,
-          dateExpired: null,
-        });
+        set({ urlKuisionerResult: null, dateExpired: null });
         throw e;
       }
     },
 
-    resetLinkState: () =>
-      set({
-        urlKuisionerResult: null,
-        dateExpired: null,
-      }),
+    resetLinkState: () => set({ urlKuisionerResult: null, dateExpired: null }),
   })
 );
 

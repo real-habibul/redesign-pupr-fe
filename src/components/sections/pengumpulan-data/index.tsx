@@ -27,12 +27,12 @@ const DEFAULT_FILTERS: SBFilter[] = [
 ];
 
 export default function PengumpulanDataList() {
-  const { data, error, loading } = useFetch(getTableListPengumpulan, []);
-  React.useEffect(() => {
-    console.log("API raw data (pengumpulan):", data);
-  }, [data]);
+  const { data, error, loading } = useFetch(getTableListPengumpulan);
 
-  const allData = Array.isArray(data) ? (data as PengumpulanRow[]) : [];
+  const allData = React.useMemo(
+    () => (Array.isArray(data) ? (data as PengumpulanRow[]) : []),
+    [data]
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFields, setSelectedFields] = useState<
@@ -151,7 +151,7 @@ export default function PengumpulanDataList() {
           <>
             <DataTableMui
               columns={columns}
-              data={filteredData as unknown as PengumpulanRow[]}
+              data={filteredData}
               striped
               stickyHeader
               pagination={{

@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 
 type UseFetchState<T> = {
@@ -8,7 +7,7 @@ type UseFetchState<T> = {
   loading: boolean;
 };
 
-export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = []) {
+export function useFetch<T>(fn: () => Promise<T>) {
   const [state, setState] = useState<UseFetchState<T>>({
     data: null,
     error: null,
@@ -35,7 +34,7 @@ export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = []) {
     return () => {
       alive = false;
     };
-  }, deps);
+  }, [fn]);
 
   return state;
 }

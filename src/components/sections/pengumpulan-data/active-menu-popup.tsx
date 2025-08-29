@@ -1,9 +1,10 @@
 import Link from "next/link";
+import type { PengumpulanRow } from "../../../types/pengumpulan-data/pengumpulan-data";
 
 type Props = {
   activeMenu: string | null;
   menuPosition: { top: number; left: number; alignRight: boolean };
-  tableData: any[];
+  tableData: PengumpulanRow[];
   openModal: (id: string) => void;
 };
 
@@ -29,7 +30,7 @@ export default function ActiveMenuPopup({
         href="#"
         className="block px-4 py-2 text-sm text-emphasis-on_surface-high hover:bg-custom-blue-50 rounded-[12px] transition-all duration-200"
         onClick={() => {
-          const item = tableData.find((item) => item.id === activeMenu);
+          const item = tableData.find((row) => row.id === activeMenu);
           if (item) openModal(item.id);
         }}>
         Lihat Detail Kuesioner

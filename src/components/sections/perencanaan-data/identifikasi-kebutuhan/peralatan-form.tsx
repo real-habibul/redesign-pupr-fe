@@ -219,8 +219,9 @@ export default function PeralatanForm({
   const bulkInit = usePeralatanStore((s) => s.bulkInit);
 
   useEffect(() => {
-    bulkInit((values.peralatans ?? []) as unknown as Peralatan[]);
-  }, [values.peralatans?.length, bulkInit]);
+    const peralatans = (values.peralatans ?? []) as unknown as Peralatan[];
+    bulkInit(peralatans);
+  }, [bulkInit, values.peralatans]);
 
   const handlePageChange = useCallback(
     (p: number) => startTransition(() => setCurrentPage(p)),

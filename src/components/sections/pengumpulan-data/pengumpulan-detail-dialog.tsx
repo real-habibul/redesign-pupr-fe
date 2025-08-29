@@ -21,13 +21,11 @@ import {
   Link as LinkIcon,
   TickCircle,
 } from "iconsax-react";
-
 import type { PengumpulanRow } from "../../../types/pengumpulan-data/pengumpulan-data";
 import {
   getVendorsByPaket,
   type VendorRow,
 } from "@lib/api/pengumpulan-data/pengumpulan";
-
 import CloseIcon from "@mui/icons-material/Close";
 import LinkKuesioner from "./link-kuesioner";
 
@@ -53,16 +51,15 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
   const [vendors, setVendors] = useState<VendorRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<SBFilter[]>(DEFAULT_FILTERS);
   const [selectedFields, setSelectedFields] = useState<(keyof VendorRow)[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<VendorRow | null>(null);
 
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [shortlistId, setShortlistId] = useState<number | string | null>(null);
 
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -71,35 +68,33 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedVendor(r);
-  };
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+    console.log("[MenuOpen] vendor row =", r);
   };
 
-  const handleSoftcopy = () => {
+  const handleMenuClose = () => setAnchorEl(null);
+
+  const handleSoftcopy = React.useCallback(() => {
     handleMenuClose();
-  };
-  const handleHardcopy = () => {
+  }, []);
+
+  const handleHardcopy = React.useCallback(() => {
     handleMenuClose();
-  };
-  const handleKuesioner = () => {
+  }, []);
+
+  const handleKuesioner = React.useCallback(() => {
     handleMenuClose();
-    if (selectedVendor && typeof window !== "undefined") {
-      // ✅ pakai informasi_umum_id sebagai ID generate-link
-      localStorage.setItem(
-        "selectedIdLinkKuesioner",
-        String(selectedVendor.informasi_umum_id)
-      );
+    if (selectedVendor) {
+      setShortlistId(selectedVendor.shortlist_id);
       setLinkDialogOpen(true);
     }
-  };
-  const handlePemeriksaan = () => {
+  }, [selectedVendor]);
+
+  const handlePemeriksaan = React.useCallback(() => {
     handleMenuClose();
-  };
+  }, []);
 
   useEffect(() => {
     if (!open || !row?.id) return;
-
     let aborted = false;
     (async () => {
       try {
@@ -118,7 +113,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
         if (!aborted) setLoading(false);
       }
     })();
-
     return () => {
       aborted = true;
     };
@@ -153,17 +147,15 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
   const filteredData = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     let items = vendors.slice();
-
     if (q) {
       const scanAll = selectedFields.length === 0;
       items = items.filter((it) => {
-        if (scanAll) {
+        if (scanAll)
           return (Object.values(it) as unknown[]).some((v) =>
             String(v ?? "")
               .toLowerCase()
               .includes(q)
           );
-        }
         return selectedFields.some((k) =>
           String(it[k] ?? "")
             .toLowerCase()
@@ -171,7 +163,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
         );
       });
     }
-
     const uniq = new Map<number, VendorRow>();
     items.forEach((it) => uniq.set(it.shortlist_id, it));
     return Array.from(uniq.values());
@@ -183,7 +174,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
     setSearchQuery(value);
     setCurrentPage(1);
   };
-
   const handleFilterClick = (next: SBFilter[]) => {
     setFilters(next);
     const picked = next
@@ -221,7 +211,7 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
         onClick: handlePemeriksaan,
       },
     ],
-    [selectedVendor]
+    [handleSoftcopy, handleHardcopy, handleKuesioner, handlePemeriksaan]
   );
 
   return (
@@ -233,7 +223,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
         maxWidth="md"
         PaperProps={{ sx: { borderRadius: "16px" } }}>
         <DialogTitle>Daftar Vendor Paket #{row?.id}</DialogTitle>
-
         <DialogContent dividers>
           <div className="flex justify-between items-center mb-4">
             <SearchBox
@@ -245,7 +234,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
               debounceDelay={200}
             />
           </div>
-
           {error && <div className="text-red-600 mb-3">{error}</div>}
           {loading ? (
             <div>Memuat vendor…</div>
@@ -272,7 +260,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
             </>
           )}
         </DialogContent>
-
         <DialogActions>
           <Button
             variant="outlined_yellow"
@@ -282,7 +269,6 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
             Tutup
           </Button>
         </DialogActions>
-
         <ActionMenu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
@@ -312,7 +298,7 @@ export default function PengumpulanDetailDialog({ open, row, onClose }: Props) {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ pt: 2 }}>
-          <LinkKuesioner />
+          <LinkKuesioner shortlistId={shortlistId} />
         </DialogContent>
       </Dialog>
     </>

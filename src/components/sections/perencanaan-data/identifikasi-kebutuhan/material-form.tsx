@@ -219,8 +219,9 @@ export default function MaterialForm({
   const bulkInit = useMaterialsStore((s) => s.bulkInit);
 
   useEffect(() => {
-    bulkInit((values.materials ?? []) as unknown as Material[]);
-  }, [values.materials?.length]);
+    const mats = (values.materials ?? []) as unknown as Material[];
+    bulkInit(mats);
+  }, [bulkInit, values.materials]);
 
   const handlePageChange = useCallback(
     (p: number) => startTransition(() => setCurrentPage(p)),
