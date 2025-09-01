@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://10.101.25.95:8000/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api";
 
 export const ENDPOINTS = {
   getBalaiKerja: "/get-balai-kerja",
@@ -23,4 +23,7 @@ export const ENDPOINTS = {
     `/pengumpulan-data/generate-link/${id}`,
   getVendorsByPaket: (id: string | number) =>
     `/pengumpulan-data/list-vendor-by-paket/${id}`,
+
+  getSurveyByToken: "/survey-kuisioner/get-data-survey",
+  listUserByRole: "/pengumpulan-data/list-user",
 } as const;

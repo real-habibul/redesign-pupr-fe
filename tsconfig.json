@@ -41,6 +41,6 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "tailwind.config.js"
-  ],
+, "app/perencanaan-data/perencanaan-list"  ],
   "exclude": ["node_modules"]
 }

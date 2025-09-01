@@ -34,7 +34,7 @@ type TabsProps = {
   className?: string;
   value?: number;
   onChange?: (index: number) => void;
-  tabListSx?: SxProps<Theme>; // <- BARU: styling khusus bar tabs
+  tabListSx?: SxProps<Theme>;
 };
 
 function a11yProps(index: number, baseId: string) {
@@ -91,11 +91,11 @@ export default function Tabs({
           sx={{
             display: "inline-flex",
             alignItems: "center",
-            bgcolor: "var(--color-solid-basic-neutral-100)", // default lama (abu)
+            bgcolor: "var(--color-solid-basic-neutral-100)",
             borderRadius: "16px",
             p: "8px",
             height: "60px",
-            ...tabListSx, // <- MERGE override per-instance
+            ...tabListSx,
           }}>
           <MuiTabs
             value={value}

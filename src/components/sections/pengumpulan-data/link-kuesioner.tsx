@@ -49,7 +49,7 @@ const LinkKuesioner: React.FC<Props> = ({ shortlistId }) => {
 
   const composedLink = useMemo(() => {
     if (!origin || !token) return "";
-    return `${origin}/pengumpulan_data/survei_kuesioner/${token}`;
+    return `${origin}/pengumpulan-data/survei-kuesioner/${token}`;
   }, [origin, token]);
 
   const handleCopyLink = async () => {
