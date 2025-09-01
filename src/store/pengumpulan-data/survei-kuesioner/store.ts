@@ -100,7 +100,6 @@ const useSurveiKuesionerStore = create<SurveiKuesionerState>((set) => ({
       }));
     } catch (err: unknown) {
       const msg = isAxiosError(err) ? err.response?.data ?? err.message : err;
-      // eslint-disable-next-line no-console
       console.error("Error fetchData:", msg);
     }
   },
@@ -111,7 +110,6 @@ const useSurveiKuesionerStore = create<SurveiKuesionerState>((set) => ({
       set({ petugasLapanganuserOptions: users.map(mapUserToOption) });
     } catch (err: unknown) {
       const msg = isAxiosError(err) ? err.response?.data ?? err.message : err;
-      // eslint-disable-next-line no-console
       console.error("Error fetchPetugasLapanganUserOptions:", msg);
     }
   },
@@ -122,7 +120,6 @@ const useSurveiKuesionerStore = create<SurveiKuesionerState>((set) => ({
       set({ pengawasUserOptions: users.map(mapUserToOption) });
     } catch (err: unknown) {
       const msg = isAxiosError(err) ? err.response?.data ?? err.message : err;
-      // eslint-disable-next-line no-console
       console.error("Error fetchPengawasUserOptions:", msg);
     }
   },

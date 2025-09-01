@@ -1,11 +1,12 @@
-"use client";
+import { Suspense } from "react";
+import ClientPage from "./client-page";
 
-import React from "react";
-import { useSearchParams } from "next/navigation";
-import SurveiKuesionerForm from "@components/sections/pengumpulan-data/survei-kuesioner";
+export const dynamic = "force-static";
 
 export default function Page() {
-  const search = useSearchParams();
-  const token = search.get("token") ?? "";
-  return <SurveiKuesionerForm token={token} />;
+  return (
+    <Suspense fallback={<div className="p-4">Memuat…</div>}>
+      <ClientPage />
+    </Suspense>
+  );
 }
