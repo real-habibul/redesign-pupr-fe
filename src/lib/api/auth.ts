@@ -10,10 +10,7 @@ type AuthServerPayload = {
   success?: boolean;
   status?: string | boolean;
   message?: string;
-  data?: {
-    accessToken?: string;
-    user?: unknown;
-  } | null;
+  data?: { accessToken?: string; user?: unknown } | null;
   access_token?: string;
   token?: string;
   user?: unknown;
@@ -55,11 +52,7 @@ function buildAuthResponse(
 
   const message = raw.message ?? (success ? okMsg : errMsg);
 
-  return {
-    success,
-    message,
-    data: { accessToken, user },
-  };
+  return { success, message, data: { accessToken, user } };
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
