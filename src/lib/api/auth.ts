@@ -25,16 +25,31 @@ function buildAuthResponse(
   errMsg: string
 ): AuthResponse {
   const success =
-    raw.success ??
-    (typeof raw.status === "string"
-      ? raw.status === "success"
-      : !!raw.status) ??
-    !!raw.data?.accessToken ??
-    !!raw.access_token ??
-    !!raw.token;
+    (typeof raw?.success === "boolean" ? raw.success : undefined) ??
+    (typeof raw?.status === "string"
+      ? raw.status.toLowerCase() === "success"
+      : typeof raw?.status === "boolean"
+      ? raw.status
+      : undefined) ??
+    (typeof raw?.data?.accessToken === "string"
+      ? raw.data.accessToken.length > 0
+      : undefined) ??
+    (typeof raw?.access_token === "string"
+      ? raw.access_token.length > 0
+      : undefined) ??
+    (typeof raw?.token === "string" ? raw.token.length > 0 : undefined) ??
+    false;
 
-  const accessToken =
-    raw.data?.accessToken ?? raw.access_token ?? raw.token ?? undefined;
+  const tokenFromData =
+    typeof raw?.data?.accessToken === "string"
+      ? raw.data.accessToken
+      : undefined;
+  const tokenFromAccess =
+    typeof raw?.access_token === "string" ? raw.access_token : undefined;
+  const tokenFromToken = typeof raw?.token === "string" ? raw.token : undefined;
+
+  const accessToken: string | undefined =
+    tokenFromData ?? tokenFromAccess ?? tokenFromToken ?? undefined;
 
   const user = (raw.data?.user ?? raw.user) as User | undefined;
 
