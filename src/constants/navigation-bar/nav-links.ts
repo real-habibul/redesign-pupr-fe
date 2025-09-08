@@ -14,6 +14,7 @@ export const NAV_LINKS: LinkItem[] = [
         href: "/perencanaan-data/perencanaan-list",
         label: "Informasi Perencanaan Data",
       },
+      { href: "/perencanaan-data/public", label: "Provinsi" },
     ],
   },
 
