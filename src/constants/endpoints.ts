@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://34.34.219.60/api";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
 
 export const ENDPOINTS = {
   getBalaiKerja: "/get-balai-kerja",
@@ -17,6 +17,11 @@ export const ENDPOINTS = {
     `/perencanaan-data/get-data-vendor/${id}`,
 
   getPerencanaanList: "/perencanaan-data/table-list-prencanaan-data",
+  
+  // Public endpoints
+  getPublicPerencanaanData: "/perencanaan-data",
+  getPublicSettings: "/settings/public",
+  getPublicProvincesAndCities: "/provinces-and-cities",
 
   getTableListPengumpulan: "/pengumpulan-data/table-list-pengumpulan",
   generateLinkPengumpulan: (id: string | number) =>

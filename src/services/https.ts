@@ -1,6 +1,6 @@
 const RAW_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "https://api-ecatalogue-staging.online/api";
+  "http://localhost:8000/api";
 const BASE_URL = RAW_BASE_URL.replace(/\/+$/, "");
 
 const join = (base: string, path: string) =>
